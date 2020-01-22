@@ -9,6 +9,8 @@ from quantum_functions import *
 # psi = numpy.random.normal((x_max - x_min) / 2, x_max / 4, number_samples)
 psi = numpy.linspace(10, 10, number_samples)
 
+
+
 E = energy_expectation(psi)
 print(E)
 
@@ -36,7 +38,8 @@ E = energy_expectation(psi)
 diff_E = prev_E - E
 
 log = True
-tweak = 8
+# log = False
+tweak = 10
 
 keep_looping = True
 while keep_looping:
@@ -79,15 +82,19 @@ while keep_looping:
         if diff_up < diff_down and diff_up < diff_E:
             if log:
                 print("\tCHOOSE UP")
+            prev_E = E
             E = E_up
             diff_E = diff_up
+            prev_psi = psi
             psi = psi_up
         # if down makes a lower E, keep it
         elif diff_down < diff_up and diff_down < diff_E:
             if log:
                 print("\tCHOOSE DOWN")
+            prev_E = E
             E = E_down
             diff_E = diff_down
+            prev_psi = psi
             psi = psi_down
         # otherwise keep the current E
         else:
@@ -95,10 +102,13 @@ while keep_looping:
                 print("\tNO CHANGE: unchanged? ", unchanged)
             num_no_change += 1
 
-        prev_E = E
-        prev_psi = psi
-        # E = energy_expectation(psi)
+        prev_E = energy_expectation(prev_psi)
+        E = energy_expectation(psi)
+        diff_E = numpy.abs(prev_E - E)
 
+    print("End of X Sequence:")
+    print("DIFF E:", diff_E)
+    print("ACCURACY:", accuracy)
     keep_looping = diff_E > accuracy
 
     # If a full loop has been performed without any tweaking, reduce the tweak size
@@ -107,7 +117,8 @@ while keep_looping:
     # if unchanged:
     if num_no_change == number_samples:
         tweak /= 2.0
-        keep_looping = True
+        if E == prev_E:
+            keep_looping = True
 
     if log:
         print("#", total_loops, " Tweak: ", tweak)

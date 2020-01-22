@@ -11,7 +11,7 @@ m = 1
 # m = 9.1093837015 #kg (from wikipedia) (less 10**-31)
 factor = -h_bar ** 2 / (2 * m)
 
-n = 3
+n = 2
 number_samples = 2 ** n + 1  # for romberg integration
 
 # x_min = -10
@@ -25,13 +25,6 @@ x = numpy.linspace(x_min, x_max, number_samples)
 
 def potential(x: numpy.ndarray):
     # use x to iterate if need be
-    # per_section = int(numpy.floor(number_samples / 3))
-    # excess = number_samples - per_section * 3
-    # inf_wall = numpy.linspace(numpy.inf, numpy.inf, per_section)
-    # zero_well = numpy.zeros(per_section + excess)
-    # well = numpy.concatenate((-inf_wall, zero_well, inf_wall), axis=None)
-    #
-    # return well
     return numpy.zeros(number_samples)
 
 
@@ -48,20 +41,35 @@ def hamiltonian(V: numpy.ndarray):
     return foo
 
 
+def normalise_psi(psi: numpy.ndarray):
+    psi_star = psi.conj()
+    mag_psi = psi_star * psi
+
+    norm = integrate.romb(mag_psi)
+    norm_psi = psi / numpy.sqrt(norm)
+
+    return norm_psi
+
+
+def is_psi_normalised(psi: numpy.ndarray):
+    psi_star = psi.conj()
+    mag_psi = psi_star * psi
+
+    norm = integrate.romb(mag_psi)
+
+    return (1 - norm) > accuracy
+
+
 def energy_expectation(psi: numpy.ndarray):
     V = potential(x)
     H = hamiltonian(V)
+    return expectation_value(H, psi)
+
+
+def expectation_value(Q, psi: numpy.ndarray):
+    if not is_psi_normalised(psi):
+        psi = normalise_psi(psi)
     psi_star = psi.conjugate()
-    integrand = psi_star * H(psi)
+    integrand = psi_star * Q(psi)
 
-    initial_integrand = integrate.romb(integrand, dx=x_step)
-
-    # Normalisation
-    abs_psi = numpy.abs(psi_star * psi)
-    magnitude_psi = integrate.romb(abs_psi, dx=x_step)
-
-    normalised = initial_integrand
-    if not (magnitude_psi - accuracy) < 0:
-        normalised /= magnitude_psi
-
-    return normalised
+    return integrate.romb(integrand)
