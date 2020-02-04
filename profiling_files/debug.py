@@ -1,6 +1,5 @@
 # The Variational Principle
 
-import importlib
 # Used for the generation of random numbers
 import random
 
@@ -8,8 +7,6 @@ import random
 import matplotlib.pyplot as plt
 import numpy
 import scipy.integrate as integrate
-# V is the potential,
-# psi is the wavefunction
 import scipy.ndimage.filters as filters
 # Used for numerical calculations throughout
 # Used for computing the laplacian in the Hamiltonian
@@ -24,6 +21,26 @@ h_bar = 6.582119569 * 10 ** -16  # eV.s
 m = 9.1093837015 * 10 ** -31  # kg (from wikipedia)
 
 factor = -h_bar ** 2 / (2 * m)
+
+x_min = -20
+x_max = -x_min
+n = 10
+number_samples = 2 ** n + 1  # for romberg integration
+x_step = (x_max - x_min) / number_samples  # make the step accurate
+
+x = numpy.linspace(x_min, x_max, number_samples)
+
+
+def memo(f):
+    cache = {}
+
+    def bar(x: numpy.ndarray):
+        y = x.tostring()
+        if y not in cache:
+            cache[y] = f(x)
+        return cache[y]
+
+    return bar
 
 
 def free_particle(r: numpy.ndarray):
@@ -107,7 +124,7 @@ def hamiltonian(V: numpy.ndarray):
     """
 
     # The grad() function to take derivatives of the given wavefunction
-    grad = numpy.gradient
+    # grad = numpy.gradient
     laplace = filters.laplace
 
     # In order to make the hamiltonian an operator, need to return a function
@@ -132,6 +149,7 @@ def hamiltonian(V: numpy.ndarray):
         # Tp = factor * grad(grad(psi))
         # Tp = factor * numpy.sum(grad(grad(psi)))
         Tp = factor * laplace(psi, mode="nearest")
+        # Tp = factor * numpy.dot(A, psi)
         # H = Tp + Vp
         return Tp + Vp
 
@@ -139,6 +157,7 @@ def hamiltonian(V: numpy.ndarray):
     return foo
 
 
+# @memo
 def normalise_psi(psi: numpy.ndarray):
     """
     Normalises the given wavefunction so that it's magnitude integrated over it's
@@ -166,6 +185,19 @@ def normalise_psi(psi: numpy.ndarray):
     return norm_psi
 
 
+def memoise(f):
+    cache = {}
+
+    def bar(Q, p: numpy.ndarray):
+        y = p.tostring()
+        if y not in cache:
+            cache[y] = f(Q, p)
+        return cache[y]
+
+    return bar
+
+
+# @memoise
 def expectation_value(Q, psi: numpy.ndarray):
     """
     Calculates the general expectation <Q> for the general operator Q.
@@ -202,13 +234,14 @@ def energy_expectation(psi: numpy.ndarray):
 def ground_state(psi_start: numpy.ndarray, number_iterations: int, seed="The Variational Principle"):
     # Set the default wavefunction
     psi = psi_start
+    H = hamiltonian(potential(x))
     # set the E to start with
     E = energy_expectation(psi)
     # Get the number of entries in the psi array to generate the random index between.
     number_entries = len(psi)
 
     # Get the random number generator, uses the given seed so that the results are repeateable
-    rand = random.seed(seed)
+    random.seed(seed)
 
     # Iterate for the number of desired iterations
     for i in range(number_iterations):
@@ -224,11 +257,13 @@ def ground_state(psi_start: numpy.ndarray, number_iterations: int, seed="The Var
 
         # Tweak the value in psi upward
         psi[rand_x] += rand_tweak
-        E_up = energy_expectation(psi)
+        # E_up = energy_expectation(psi)
+        E_up = expectation_value(H, psi)
 
         # Tweak the value in psi downward from the original psi value
         psi[rand_x] -= 2 * rand_tweak
-        E_down = energy_expectation(psi)
+        # E_down = energy_expectation(psi)
+        E_down = expectation_value(H, psi)
 
         # reset psi to the original value
         psi[rand_x] += rand_tweak
@@ -252,26 +287,19 @@ def ground_state(psi_start: numpy.ndarray, number_iterations: int, seed="The Var
     return psi
 
 
-x_min = -20
-x_max = -x_min
-n = 10
-number_samples = 2 ** n + 1  # for romberg integration
-x_step = (x_max - x_min) / number_samples  # make the step accurate
-
-x = numpy.linspace(x_min, x_max, number_samples)
-
 # potential = finite_square_well
 potential = finite_square_well
 
 # The number of times to generate a random number.
-# number_iterations = 5000
-number_iterations = 1000
+number_iterations = 5000
+# number_iterations = 1000
 # number_iterations = 10
 # number_iterations = 50000
 # number_iterations = 5000000
 
 # Set the default wavefunction
-psi = numpy.linspace(0.2, 0.2, number_samples)
+psi = numpy.linspace(1, 1, number_samples)
+psi = normalise_psi(psi)
 
 # Plot the wavefunction versus the potential for visualisation
 # plt.plot(x, psi)
@@ -279,7 +307,12 @@ psi = numpy.linspace(0.2, 0.2, number_samples)
 # plt.legend(("$\psi$", "V"))
 # plt.show()
 
+import time
+
+t1 = time.time()
 psi = ground_state(psi, number_iterations)
+t2 = time.time()
+print("Time:", t2 - t1)
 
 # plot the final wavefunction.
 # plt.plot(x, psi)
