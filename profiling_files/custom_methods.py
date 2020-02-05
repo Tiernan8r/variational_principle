@@ -284,7 +284,7 @@ def ground_state(psi_start: numpy.ndarray, number_iterations: int, seed="The Var
             E = E_up
             re_norm(psi, rand_x)
             psi = normalise(psi)
-            is_normalised = False
+            # is_normalised = False
             # print("CHOSE UP")
         elif E_down < E_up and E_down < E:
             # If decreasing the entry results in a lower overall <E>,
@@ -293,7 +293,7 @@ def ground_state(psi_start: numpy.ndarray, number_iterations: int, seed="The Var
             E = E_down
             re_norm(psi, rand_x)
             psi = normalise(psi)
-            is_normalised = False
+            # is_normalised = False
             # print("CHOSE DOWN")
 
         # otherwise the psi should be left unchanged.
