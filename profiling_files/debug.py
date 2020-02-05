@@ -237,10 +237,11 @@ def ground_state(psi_start: numpy.ndarray, number_iterations: int, seed="The Var
     H = hamiltonian(potential(x))
     # set the E to start with
     E = energy_expectation(psi)
+    print(E)
     # Get the number of entries in the psi array to generate the random index between.
     number_entries = len(psi)
 
-    # Get the random number generator, uses the given seed so that the results are repeateable
+    # Get the random number generator, uses the given seed so that the results are repeatable
     random.seed(seed)
 
     # Iterate for the number of desired iterations
@@ -291,10 +292,10 @@ def ground_state(psi_start: numpy.ndarray, number_iterations: int, seed="The Var
 potential = finite_square_well
 
 # The number of times to generate a random number.
-number_iterations = 5000
+# number_iterations = 5000
 # number_iterations = 1000
 # number_iterations = 10
-# number_iterations = 50000
+number_iterations = 50000
 # number_iterations = 5000000
 
 # Set the default wavefunction
