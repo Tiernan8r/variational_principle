@@ -5,8 +5,7 @@ import numpy
 # Used for Fourier Analysis of results
 from scipy import fftpack
 
-# a = -20.0
-a = 0
+a = -20.0
 b = 20.0
 n = 2 ** 10 + 1
 # n = 10
@@ -20,8 +19,8 @@ factor = -hbar ** 2 / (2 * m)
 
 x = numpy.linspace(a, b, num=n, dtype=complex)
 k = 0.01
-# V = numpy.zeros(n)
-V = 0.5 * k * x ** 2
+V = numpy.zeros(n)
+# V = 0.5 * k * x ** 2
 
 # Array containing all the H(psi)
 global hamiltonians_array
@@ -35,13 +34,16 @@ global normalisation_array
 global psi
 # The actual <E> as a sum of the tiny <E>
 global E
+# The magnitude to normalise psi by
+global norm
+norm = 0
 
 hamiltonians_array = numpy.zeros(n, dtype=complex)
 
-infinitesimal_energy_expectations = numpy.zeros(n, dtype=complex)
-energies_array = numpy.zeros(n, dtype=complex)
+infinitesimal_energy_expectations = numpy.zeros(n)
+energies_array = numpy.zeros(n)
 is_normalised = False
-normalisation_array = numpy.zeros(n, dtype=complex)
+normalisation_array = numpy.zeros(n)
 E = 0
 
 psi = numpy.linspace(1, 1, n, dtype=complex)
@@ -146,7 +148,6 @@ def recalculate_energy(psi: numpy.ndarray, i: int):
     Recalculates the <E> at the given i for the given psi.
     :param psi: The wavefunction to use for the expectation value.
     :param i: The index to perform the calculation at.
-    :return:
     """
     # psi*
     # H psi
@@ -161,7 +162,7 @@ def recalculate_energy(psi: numpy.ndarray, i: int):
     # alters the H*psi value at index i
     hamiltonians_array[i] = hamil(psi, i)
 
-    infinitesimal_energy_expectations[i] = psi[i].conj() * hamiltonians_array[i]
+    infinitesimal_energy_expectations[i] = (psi[i].conj() * hamiltonians_array[i]).real
 
     # re_integrate(i)
     energies_array[i] = re_integrate(i, infinitesimal_energy_expectations)
@@ -175,7 +176,10 @@ def energy_expectation():
     # global E
     # E = numpy.sum(energies_array).real
     # return E
-    return numpy.sum(energies_array).real
+    non_normalised_E = numpy.sum(energies_array).real
+    normalised_E = non_normalised_E / norm
+    return normalised_E
+    # return numpy.sum(energies_array).real
 
 
 def re_norm(psi: numpy.ndarray, i: int):
@@ -183,13 +187,34 @@ def re_norm(psi: numpy.ndarray, i: int):
     Recalculates the normalisation for the given psi wavefunction at the index i.
     :param psi: The wavefunction to re normalise.
     :param i: The index to perform the normalisation at.
-    :return:
     """
     global mag_psi
     global normalisation_array
+    global is_normalised
+
     mag_psi[i] = psi[i].conj() * psi[i]
-    normalisation_array[i] = re_integrate(i, mag_psi)
+    normalisation_array[i] = re_integrate(i, mag_psi).real
+
+    is_normalised = False
     # return re_integrate(i, mag_psi)
+
+
+def normalise_arrays():
+    """
+    Re-normalise the arrays using the normalisations calculated by re_norm()
+    :param psi: The wavefunction to normalise.
+    """
+    # Assumes that norms has been properly calculated...
+    global is_normalised
+    global mag_psi
+    global normalisation_array
+    global norm
+
+    if not is_normalised:
+        norm = numpy.sum(normalisation_array)
+        mag_psi /= norm
+        normalisation_array /= norm
+        is_normalised = True
 
 
 def normalise(psi: numpy.ndarray):
@@ -200,20 +225,82 @@ def normalise(psi: numpy.ndarray):
     """
     # Assumes that norms has been properly calculated...
     global is_normalised
-    global norm
+    global mag_psi
     global normalisation_array
+    global norm
 
     # if not is_normalised:
-    #     norm = numpy.sum(norms)
+    #     norm = numpy.sum(normalisation_array)
     #     psi /= numpy.sqrt(norm)
-    #     norms /= norm
+    #     mag_psi /= norm
+    #     normalisation_array /= norm
     #     is_normalised = True
-
-    norm = numpy.sum(normalisation_array)
+    #     return psi
+    # else:
+    #     return psi
+    normalise_arrays()
     psi /= numpy.sqrt(norm)
-    normalisation_array /= norm
     return psi
+
+    # norm = numpy.sum(normalisation_array)
+    # psi /= numpy.sqrt(norm)
+    # normalisation_array /= norm
+    # return psi
+
     # is_normalised = True
+
+
+#
+# def tweak_psi(psi: numpy.ndarray, pos: int, tweak: complex):
+#     """
+#     Changes the given wavefunction at the given index by the given amount, and renormalises the result.
+#     Calculates the new <E> for this changed wave function as well.
+#     :param psi: The wavefunction to modify.
+#     :param pos: The index of the wavefunction to modify.
+#     :param tweak: The amount to modify by.
+#     :return: A tuple of the wavefunction and it's corresponding <E>.
+#     """
+#     # Tweak the value in psi by the given amount
+#     psi[pos] += tweak
+#
+#     # Recompute the normalisation for this entry
+#     re_norm(psi, pos)
+#     # Re normalise psi
+#     psi = normalise(psi)
+#
+#     # Re calculate the energy at this entry as well
+#     recalculate_energy(psi, pos)
+#     # The tweaked energy value is the new <E>
+#     E_new = energy_expectation()
+#
+#     return psi, E_new
+
+
+def tweak_psi(psi: numpy.ndarray, pos: int, tweak: complex):
+    """
+    Changes the given wavefunction at the given index by the given amount, and renormalises the result.
+    Calculates the new <E> for this changed wave function as well.
+    :param psi: The wavefunction to modify.
+    :param pos: The index of the wavefunction to modify.
+    :param tweak: The amount to modify by.
+    :return: The wavefunction's <E>.
+    """
+    # Tweak the value in psi by the given amount
+    psi[pos] += tweak
+
+    # Recompute the normalisation for this entry
+    re_norm(psi, pos)
+    # Re normalise psi
+    # psi = normalise(psi)
+    normalise_arrays()
+
+    # Re calculate the energy at this entry as well
+    recalculate_energy(psi, pos)
+    # The tweaked energy value is the new <E>
+    E_new = energy_expectation()
+
+    # return psi, E_new
+    return E_new
 
 
 def ground_state(psi_start: numpy.ndarray, number_iterations: int, seed="The Variational Principle"):
@@ -232,7 +319,7 @@ def ground_state(psi_start: numpy.ndarray, number_iterations: int, seed="The Var
 
     # Set the default wavefunction
     psi = psi_start
-    # psi is already normalised by intialise()
+    # psi is already normalised by initialise()
     # and E is already calculated.
 
     # Get the random number generator, uses the given seed so that the results are repeatable
@@ -245,56 +332,73 @@ def ground_state(psi_start: numpy.ndarray, number_iterations: int, seed="The Var
         rand_x = random.randrange(0, n)
 
         # Generate a random number to alter the entry by.
-        rand_y = random.random()
+        rand_y = 0
+        imaginary_part = random.randint(0, 1)
+        # True is the imaginary part:
+        if imaginary_part:
+            rand_y = complex(0, random.random())
+        else:
+            rand_y = complex(random.random())
 
-        # Tweak the value in psi upward
-        psi[rand_x] += rand_y
+        # rand_y_real = random.random()
+        # rand_y_imag = random.random()
+        # rand_y = complex(rand_y_real, rand_y_imag)
 
-        # Recompute the normalisation for this entry
-        re_norm(psi, rand_x)
-        # Re normalise psi
-        psi = normalise(psi)
+        #
+        # # Tweak the value in psi upward
+        # psi[rand_x] += rand_y
 
-        # Re calculate the energy at this entry as well
-        recalculate_energy(psi, rand_x)
-        # The tweaked up value is the new <E>
-        E_up = energy_expectation()
+        # # Recompute the normalisation for this entry
+        # re_norm(psi, rand_x)
+        # # Re normalise psi
+        # psi = normalise(psi)
+        # normalise_arrays(psi)
 
-        # Tweak the value in psi downward from the original psi value
-        psi[rand_x] -= 2 * rand_y
-        # Re normalise
-        re_norm(psi, rand_x)
-        psi = normalise(psi)
-
-        # Calculate <E> for this change again.
-        recalculate_energy(psi, rand_x)
-        E_down = energy_expectation()
-
-        # reset psi to the original value
-        psi[rand_x] += rand_y
-        re_norm(psi, rand_x)
-        psi = normalise(psi)
+        # # Re calculate the energy at this entry as well
+        # recalculate_energy(psi, rand_x)
+        # # The tweaked up value is the new <E>
+        # E_up = energy_expectation()
+        # psi, E_up = tweak_psi(psi, rand_x, rand_y)
+        E_up = tweak_psi(psi, rand_x, rand_y)
+        #
+        # # Tweak the value in psi downward from the original psi value
+        # psi[rand_x] -= 2 * rand_y
+        # # Re normalise
+        # re_norm(psi, rand_x)
+        # psi = normalise(psi)
+        #
+        # # Calculate <E> for this change again.
+        # recalculate_energy(psi, rand_x)
+        # E_down = energy_expectation()
+        # psi, E_down = tweak_psi(psi, rand_x, -2 * rand_y)
+        E_down = tweak_psi(psi, rand_x, -2 * rand_y)
+        #
+        # # reset psi to the original value
+        # psi[rand_x] += rand_y
+        # re_norm(psi, rand_x)
+        # psi = normalise(psi)
+        # psi, E = tweak_psi(psi, rand_x, rand_y)
+        E = tweak_psi(psi, rand_x, rand_y)
 
         # Compare energies for tweaking the entry up versus down, and keep the change
         # that results in a lower overall expectation value for the energy.
         if E_up < E_down and E_up < E:
+
             # If increasing the value in the entry results in a lower overall <E>
             # set the change and keep it
             psi[rand_x] += rand_y
             E = E_up
             re_norm(psi, rand_x)
             psi = normalise(psi)
-            # is_normalised = False
-            # print("CHOSE UP")
+
         elif E_down < E_up and E_down < E:
+
             # If decreasing the entry results in a lower overall <E>,
             # reduce the value and keep it.
             psi[rand_x] -= rand_y
             E = E_down
             re_norm(psi, rand_x)
             psi = normalise(psi)
-            # is_normalised = False
-            # print("CHOSE DOWN")
 
         # otherwise the psi should be left unchanged.
         # Same goes for Is, Es, norms, and the normalisation.
@@ -323,7 +427,6 @@ def generate_psi():
 def initialise():
     """
     Sets the initial values for the global arrays.
-    :return:
     """
     global E
     global psi
@@ -345,7 +448,7 @@ generate_psi()
 initialise()
 for i in range(n):
     re_norm(psi, i)
-normalise(psi)
+psi = normalise(psi)
 
 
 def plurts():
@@ -353,60 +456,76 @@ def plurts():
     plt.title("Potential")
     plt.show()
 
-    plt.plot(x, psi)
-    plt.title("$\psi$")
+    plt.plot(x, psi.real)
+    plt.title("Real $\psi$")
     plt.show()
 
-    plt.plot(infinitesimal_energy_expectations)
+    plt.plot(x, psi.imag)
+    plt.title("Imaginary $\psi$")
+    plt.show()
+
+    plt.plot(x, infinitesimal_energy_expectations)
     plt.title("Infinitesimal <E>s")
     plt.show()
 
-    plt.plot(energies_array)
+    plt.plot(x, energies_array)
     plt.title("Infinitesimal Energies")
     plt.show()
 
-    plt.plot(mag_psi)
+    plt.plot(x, mag_psi)
     plt.title("$|\psi|^2$")
     plt.show()
 
-    plt.plot(normalisation_array)
+    plt.plot(x, normalisation_array)
     plt.title("NORMS")
     plt.show()
 
-    plt.plot(hamiltonians_array)
+    plt.plot(x, hamiltonians_array)
     plt.title("Infinitesimal Hamiltonians:")
     plt.show()
 
 
+E = energy_expectation()
 print("Initial Energy:", E)
 # plurts()
 psi = ground_state(psi, number_iterations)
+E = energy_expectation()
 print("Final Energy:", E)
 # plurts()
 
-# Do the FT on the wavefunction
-fft_psi = fftpack.fft(psi)
-# Half the produced value as the FT is symmetric
-fft_psi = fft_psi[:int(len(fft_psi) / 2)]
-# plt.plot(x, fft_psi)
+plt.plot(x, psi.real)
+plt.title("Original $\psi$")
+plt.xlabel("x")
+plt.ylabel("$\psi$")
+plt.show()
 
-# Plot the FT to visualise the results.
-# plt.plot(fft_psi)
-# plt.show()
 
-# Chop the FT to keep only the most important harmonics
-fft_psi = fft_psi[:25]
-# Plot the minimised FT
-# plt.plot(fft_psi)
-# plt.show()
+def fourier_analysis(psi):
+    # Do the FT on the wavefunction
+    fft_psi = fftpack.fft(psi.real)
+    # Half the produced value as the FT is symmetric
+    fft_psi = fft_psi[:int(len(fft_psi) / 2)]
+    # plt.plot(x, fft_psi)
 
-# Perform an inverse FT to get the smoothed wavefunction back
-psi = fftpack.ifft(fft_psi)
+    # Plot the FT to visualise the results.
+    # plt.plot(fft_psi)
+    # plt.show()
 
-# Plot the final wavefunction to show the result.
-x_range = numpy.linspace(a, b, len(psi))
-# plt.plot(x_range, psi)
-# plt.title("Smoothed Wavefunction $\psi$")
-# plt.xlabel("x")
-# plt.ylabel("$\psi$")
-# plt.show()
+    # Chop the FT to keep only the most important harmonics
+    fft_psi = fft_psi[:33]
+    # Plot the minimised FT
+    # plt.plot(fft_psi)
+    # plt.show()
+
+    # Perform an inverse FT to get the smoothed wavefunction back
+    psi = fftpack.ifft(fft_psi)
+
+    # Plot the final wavefunction to show the result.
+    x_range = numpy.linspace(a, b, len(psi.real))
+    plt.plot(x_range, psi.real)
+    plt.title("Smoothed Wavefunction $\psi$")
+    plt.xlabel("x")
+    plt.ylabel("$\psi$")
+    plt.show()
+
+# fourier_analysis(psi)
