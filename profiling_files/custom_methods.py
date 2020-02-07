@@ -15,12 +15,12 @@ half_h = h * 0.5
 
 hbar = 1.054571817 * 10 ** -34  # eV
 m = 9.1093837015 * 10 ** -31  # kg
-factor = -hbar ** 2 / (2 * m)
+factor = -(hbar ** 2) / (2 * m)
 
 x = numpy.linspace(a, b, num=n, dtype=complex)
 k = 0.01
-V = numpy.zeros(n)
-# V = 0.5 * k * x ** 2
+# V = numpy.zeros(n)
+V = 0.5 * k * x ** 2
 
 # Array containing all the H(psi)
 global hamiltonians_array
@@ -32,11 +32,6 @@ global energies_array
 global normalisation_array
 # psi itself
 global psi
-# The actual <E> as a sum of the tiny <E>
-global E
-# The magnitude to normalise psi by
-global norm
-norm = 0
 
 hamiltonians_array = numpy.zeros(n, dtype=complex)
 
@@ -44,7 +39,6 @@ infinitesimal_energy_expectations = numpy.zeros(n)
 energies_array = numpy.zeros(n)
 is_normalised = False
 normalisation_array = numpy.zeros(n)
-E = 0
 
 psi = numpy.linspace(1, 1, n, dtype=complex)
 mag_psi = psi.conj() * psi
@@ -127,19 +121,10 @@ def hamil(psi: numpy.ndarray, i: int):
     :param i: The index to do the operation at.
     :return: The hamiltonian value at index i for the given psi.
     """
-    # Tp = factor * second_derivative(psi)
-    # Vp = V * psi
-    # Hp = Tp + Vp
-    # return Hp
-
-    # Hp[i] = Tpi + Vpi
-    # pass
 
     Tpi = factor * second_derivative(psi, i)
     Vpi = V[i] * psi[i]
-    # Hpi = Tpi + Vpi
-    # return Hpi
-    # hamiltonians_array[i] = Tpi + Vpi
+
     return Tpi + Vpi
 
 
@@ -164,7 +149,6 @@ def recalculate_energy(psi: numpy.ndarray, i: int):
 
     infinitesimal_energy_expectations[i] = (psi[i].conj() * hamiltonians_array[i]).real
 
-    # re_integrate(i)
     energies_array[i] = re_integrate(i, infinitesimal_energy_expectations)
 
 
@@ -173,13 +157,11 @@ def energy_expectation():
     Calculates the <E> energy expectation value from the energues_array array
     :return: The energy expectation value <E> as a scalar.
     """
-    # global E
-    # E = numpy.sum(energies_array).real
-    # return E
+
     non_normalised_E = numpy.sum(energies_array).real
+    norm = numpy.sum(normalisation_array)
     normalised_E = non_normalised_E / norm
     return normalised_E
-    # return numpy.sum(energies_array).real
 
 
 def re_norm(psi: numpy.ndarray, i: int):
@@ -196,84 +178,6 @@ def re_norm(psi: numpy.ndarray, i: int):
     normalisation_array[i] = re_integrate(i, mag_psi).real
 
     is_normalised = False
-    # return re_integrate(i, mag_psi)
-
-
-def normalise_arrays():
-    """
-    Re-normalise the arrays using the normalisations calculated by re_norm()
-    :param psi: The wavefunction to normalise.
-    """
-    # Assumes that norms has been properly calculated...
-    global is_normalised
-    global mag_psi
-    global normalisation_array
-    global norm
-
-    if not is_normalised:
-        norm = numpy.sum(normalisation_array)
-        mag_psi /= norm
-        normalisation_array /= norm
-        is_normalised = True
-
-
-def normalise(psi: numpy.ndarray):
-    """
-    Re-normalise the wavefunction psi, using the normalisation factors pre calculated from normalisation_array.
-    :param psi: The wavefunction to normalise.
-    :return: The normalised wavefunction.
-    """
-    # Assumes that norms has been properly calculated...
-    global is_normalised
-    global mag_psi
-    global normalisation_array
-    global norm
-
-    # if not is_normalised:
-    #     norm = numpy.sum(normalisation_array)
-    #     psi /= numpy.sqrt(norm)
-    #     mag_psi /= norm
-    #     normalisation_array /= norm
-    #     is_normalised = True
-    #     return psi
-    # else:
-    #     return psi
-    normalise_arrays()
-    psi /= numpy.sqrt(norm)
-    return psi
-
-    # norm = numpy.sum(normalisation_array)
-    # psi /= numpy.sqrt(norm)
-    # normalisation_array /= norm
-    # return psi
-
-    # is_normalised = True
-
-
-#
-# def tweak_psi(psi: numpy.ndarray, pos: int, tweak: complex):
-#     """
-#     Changes the given wavefunction at the given index by the given amount, and renormalises the result.
-#     Calculates the new <E> for this changed wave function as well.
-#     :param psi: The wavefunction to modify.
-#     :param pos: The index of the wavefunction to modify.
-#     :param tweak: The amount to modify by.
-#     :return: A tuple of the wavefunction and it's corresponding <E>.
-#     """
-#     # Tweak the value in psi by the given amount
-#     psi[pos] += tweak
-#
-#     # Recompute the normalisation for this entry
-#     re_norm(psi, pos)
-#     # Re normalise psi
-#     psi = normalise(psi)
-#
-#     # Re calculate the energy at this entry as well
-#     recalculate_energy(psi, pos)
-#     # The tweaked energy value is the new <E>
-#     E_new = energy_expectation()
-#
-#     return psi, E_new
 
 
 def tweak_psi(psi: numpy.ndarray, pos: int, tweak: complex):
@@ -292,7 +196,7 @@ def tweak_psi(psi: numpy.ndarray, pos: int, tweak: complex):
     re_norm(psi, pos)
     # Re normalise psi
     # psi = normalise(psi)
-    normalise_arrays()
+    # normalise_arrays()
 
     # Re calculate the energy at this entry as well
     recalculate_energy(psi, pos)
@@ -301,6 +205,16 @@ def tweak_psi(psi: numpy.ndarray, pos: int, tweak: complex):
 
     # return psi, E_new
     return E_new
+
+
+def normalise_psi(psi: numpy.ndarray):
+    norm = numpy.sum(normalisation_array)
+    mag_psi /= norm
+    psi /= numpy.sqrt(norm)
+    normalisation_array /= norm
+    print(numpy.sum(normalisation_array))
+    norm = 1
+    return psi
 
 
 def ground_state(psi_start: numpy.ndarray, number_iterations: int, seed="The Variational Principle"):
@@ -315,12 +229,12 @@ def ground_state(psi_start: numpy.ndarray, number_iterations: int, seed="The Var
     global energies_array
     global infinitesimal_energy_expectations
     global is_normalised
-    global E
 
     # Set the default wavefunction
     psi = psi_start
     # psi is already normalised by initialise()
     # and E is already calculated.
+    E = energy_expectation()
 
     # Get the random number generator, uses the given seed so that the results are repeatable
     random.seed(seed)
@@ -332,53 +246,27 @@ def ground_state(psi_start: numpy.ndarray, number_iterations: int, seed="The Var
         rand_x = random.randrange(0, n)
 
         # Generate a random number to alter the entry by.
-        rand_y = 0
-        imaginary_part = random.randint(0, 1)
-        # True is the imaginary part:
-        if imaginary_part:
-            rand_y = complex(0, random.random())
-        else:
-            rand_y = complex(random.random())
+        rand_y = random.random()
+        # rand_y = 0
+        # imaginary_part = random.randint(0, 1)
+        # # True is the imaginary part:
+        # if imaginary_part:
+        #     rand_y = complex(0, random.random())
+        # else:
+        #     rand_y = complex(random.random())
 
-        # rand_y_real = random.random()
-        # rand_y_imag = random.random()
-        # rand_y = complex(rand_y_real, rand_y_imag)
-
-        #
-        # # Tweak the value in psi upward
-        # psi[rand_x] += rand_y
-
-        # # Recompute the normalisation for this entry
-        # re_norm(psi, rand_x)
-        # # Re normalise psi
-        # psi = normalise(psi)
-        # normalise_arrays(psi)
-
-        # # Re calculate the energy at this entry as well
-        # recalculate_energy(psi, rand_x)
-        # # The tweaked up value is the new <E>
-        # E_up = energy_expectation()
-        # psi, E_up = tweak_psi(psi, rand_x, rand_y)
         E_up = tweak_psi(psi, rand_x, rand_y)
-        #
-        # # Tweak the value in psi downward from the original psi value
-        # psi[rand_x] -= 2 * rand_y
-        # # Re normalise
-        # re_norm(psi, rand_x)
-        # psi = normalise(psi)
-        #
-        # # Calculate <E> for this change again.
-        # recalculate_energy(psi, rand_x)
-        # E_down = energy_expectation()
-        # psi, E_down = tweak_psi(psi, rand_x, -2 * rand_y)
         E_down = tweak_psi(psi, rand_x, -2 * rand_y)
-        #
-        # # reset psi to the original value
-        # psi[rand_x] += rand_y
-        # re_norm(psi, rand_x)
-        # psi = normalise(psi)
-        # psi, E = tweak_psi(psi, rand_x, rand_y)
+        # print("E before:", E)
+        # E_b = E
         E = tweak_psi(psi, rand_x, rand_y)
+        # E_A = E
+        # print("E after:", E)
+        # dE = E_b - E_A
+        # print("E diff:", dE, "\n")
+        # if dE != 0:
+        #     print("!!!")
+        #     break
 
         # Compare energies for tweaking the entry up versus down, and keep the change
         # that results in a lower overall expectation value for the energy.
@@ -386,26 +274,24 @@ def ground_state(psi_start: numpy.ndarray, number_iterations: int, seed="The Var
 
             # If increasing the value in the entry results in a lower overall <E>
             # set the change and keep it
-            psi[rand_x] += rand_y
-            E = E_up
-            re_norm(psi, rand_x)
-            psi = normalise(psi)
+            E = tweak_psi(psi, rand_x, rand_y)
 
         elif E_down < E_up and E_down < E:
 
             # If decreasing the entry results in a lower overall <E>,
             # reduce the value and keep it.
-            psi[rand_x] -= rand_y
-            E = E_down
-            re_norm(psi, rand_x)
-            psi = normalise(psi)
+            E = tweak_psi(psi, rand_x, -rand_y)
 
         # otherwise the psi should be left unchanged.
         # Same goes for Is, Es, norms, and the normalisation.
 
     # Normalise the final wavefunction
     # psi = normalise_psi(psi)
-    psi = normalise(psi)
+    # psi = normalise(psi)
+    A = numpy.sum(normalisation_array)
+    print(A)
+    psi /= numpy.sqrt(A)
+
     return psi
 
 
@@ -428,12 +314,11 @@ def initialise():
     """
     Sets the initial values for the global arrays.
     """
-    global E
     global psi
 
     for i in range(n):
         re_norm(psi, i)
-    psi = normalise(psi)
+    # psi = normalise(psi)
 
     for i in range(n):
         recalculate_energy(psi, i)
@@ -448,7 +333,9 @@ generate_psi()
 initialise()
 for i in range(n):
     re_norm(psi, i)
-psi = normalise(psi)
+
+
+# psi = normalise(psi)
 
 
 def plurts():
