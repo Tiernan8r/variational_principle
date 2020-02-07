@@ -18,9 +18,81 @@ m = 9.1093837015 * 10 ** -31  # kg
 factor = -(hbar ** 2) / (2 * m)
 
 x = numpy.linspace(lower_bound, upper_bound, num=number_points)
-k = 0.01
-# V = numpy.zeros(n)
-V = 0.5 * k * x ** 2
+
+
+def free_particle(r: numpy.ndarray):
+    """
+    The free particle potential represents an unbound particle in zero potential.
+    :param r: The coordinates of the potential values
+    :return: The free particle potential.
+    """
+    # The free particle has no potential.
+    return numpy.zeros(len(r))
+
+
+def finite_square_well(r: numpy.ndarray, V_0=1.0, wall_bounds=(200, 800)):
+    """
+    The infinite square well has defined potential within the bounds.
+    :param r: The coordinates of the potential values.
+    :param V_0: The potential value outside of the well
+    :param wall_bounds: The points at which the well boundary starts.
+    :return: The infinite potential well function.
+    """
+    # Get the number of points along the axis
+    num_points = len(r)
+    # The first number in wall_bounds is the index of the first well wall
+    lower = wall_bounds[0]
+    # the index of the second wall is the second index in wall_bounds
+    upper = num_points - wall_bounds[1]
+
+    # Create the potential barrier of the well.
+    lower_wall = numpy.array([V_0] * lower)
+    # inside the well the potential is 0
+    zeroes = numpy.zeros(num_points - lower - upper)
+    # second potential barrier
+    upper_wall = numpy.array([V_0] * upper)
+    # Make the potential the combination of all the sections
+    pot = numpy.concatenate((lower_wall, zeroes, upper_wall))
+
+    return pot
+
+
+def infinite_square_well(r: numpy.ndarray, wall_bounds=(200, 800)):
+    """
+    The infinite square well has defined potential within the bounds.
+    :param r: The coordinates of the potential values.
+    :param wall_bounds: The points at which the well boundary starts.
+    :return: The infinite potential well function.
+    """
+    # Use the finite square well with infinite barriers.
+    return finite_square_well(r, numpy.inf, wall_bounds)
+
+
+def harmonic_oscillator(r: numpy.ndarray, k=0.01):
+    """
+    The Harmonic Oscillator potential is quadratic about the origin.
+    :param r: The coordinates of the potential values.
+    :param k: Hooke's constant for the system
+    :return: The harmonic potential.
+    """
+    # The potential energy formula:
+    return 0.5 * k * r ** 2
+
+
+def potential(r: numpy.ndarray):
+    """
+    The potential energy function of the system.
+    :param r: The points on the axes of the system.
+    :return: A scalar ndarray of the values of the potential at each point in r.
+    """
+
+    return harmonic_oscillator(r, 0.01)
+    # return finite_square_well(r, 1, (200, 800))
+    # return infinite_square_well(r, (200, 800))
+    # return free_particle(r)
+
+
+V = potential(x)
 
 # Array containing all the H(psi)
 global hamiltonians_array
@@ -384,6 +456,7 @@ plt.title("Original $\psi$")
 plt.xlabel("x")
 plt.ylabel("$\psi$")
 plt.show()
+
 
 def fourier_analysis(psi):
     # Do the FT on the wavefunction
