@@ -29,6 +29,7 @@ global infinitesimal_energy_expectations
 # The actual [psi x H(psi)]dx to sum over
 global energies_array
 # Array of magnitudes of the psi
+global mag_psi
 global normalisation_array
 # psi itself
 global psi
@@ -37,7 +38,6 @@ hamiltonians_array = numpy.zeros(n, dtype=complex)
 
 infinitesimal_energy_expectations = numpy.zeros(n)
 energies_array = numpy.zeros(n)
-is_normalised = False
 normalisation_array = numpy.zeros(n)
 
 psi = numpy.linspace(1, 1, n, dtype=complex)
@@ -45,6 +45,9 @@ mag_psi = psi.conj() * psi
 
 # number_iterations = 10000
 number_iterations = 50000
+
+
+# number_iterations = 1000
 
 
 def re_integrate(i: int, f: numpy.ndarray, step=h):
@@ -172,12 +175,9 @@ def re_norm(psi: numpy.ndarray, i: int):
     """
     global mag_psi
     global normalisation_array
-    global is_normalised
 
     mag_psi[i] = psi[i].conj() * psi[i]
     normalisation_array[i] = re_integrate(i, mag_psi).real
-
-    is_normalised = False
 
 
 def tweak_psi(psi: numpy.ndarray, pos: int, tweak: complex):
@@ -208,16 +208,18 @@ def tweak_psi(psi: numpy.ndarray, pos: int, tweak: complex):
 
 
 def normalise_psi(psi: numpy.ndarray):
+    global normalisation_array
+    global mag_psi
+
     norm = numpy.sum(normalisation_array)
     mag_psi /= norm
     psi /= numpy.sqrt(norm)
     normalisation_array /= norm
-    print(numpy.sum(normalisation_array))
-    norm = 1
+
     return psi
 
 
-def ground_state(psi_start: numpy.ndarray, number_iterations: int, seed="The Variational Principle"):
+def ground_state(number_iterations: int, seed="The Variational Principle"):
     """
     Calculates the ground state wavefunction for a given potential system, by fiinding the wavefunction with
     minimum expectation value in the energy <E>.
@@ -228,10 +230,9 @@ def ground_state(psi_start: numpy.ndarray, number_iterations: int, seed="The Var
     """
     global energies_array
     global infinitesimal_energy_expectations
-    global is_normalised
 
-    # Set the default wavefunction
-    psi = psi_start
+    psi = initialise()
+
     # psi is already normalised by initialise()
     # and E is already calculated.
     E = energy_expectation()
@@ -259,7 +260,8 @@ def ground_state(psi_start: numpy.ndarray, number_iterations: int, seed="The Var
         E_down = tweak_psi(psi, rand_x, -2 * rand_y)
         # print("E before:", E)
         # E_b = E
-        E = tweak_psi(psi, rand_x, rand_y)
+        # E = tweak_psi(psi, rand_x, rand_y)
+        tweak_psi(psi, rand_x, rand_y)
         # E_A = E
         # print("E after:", E)
         # dE = E_b - E_A
@@ -288,20 +290,23 @@ def ground_state(psi_start: numpy.ndarray, number_iterations: int, seed="The Var
     # Normalise the final wavefunction
     # psi = normalise_psi(psi)
     # psi = normalise(psi)
-    A = numpy.sum(normalisation_array)
-    print(A)
-    psi /= numpy.sqrt(A)
+    # A = numpy.sum(normalisation_array)
+    # print(A)
+    # psi /= numpy.sqrt(A)
+    psi = normalise_psi(psi)
 
     return psi
 
 
 # p(x) = \frac{1}{\sqrt{ 2 \pi \sigma^2 }} e^{ - \frac{ (x - \mu)^2 } {2 \sigma^2} },
-def generate_psi():
+def generate_psi(start=a, stop=b, number_samples=n):
     """
     Creates a Gaussian distribution for the wavefunction psi
     :return:
     """
-    global psi
+
+    x = numpy.linspace(start, stop, number_samples)
+
     mu = complex((a + b) / 2.0)
     sigma = complex((b - a) / 4.0)
     pi = complex(numpy.pi)
@@ -309,33 +314,27 @@ def generate_psi():
     B = numpy.exp(- ((x - mu) ** 2) / (2 * sigma ** 2))
     psi = A * B
 
+    return psi
+
 
 def initialise():
     """
     Sets the initial values for the global arrays.
     """
-    global psi
+
+    psi = generate_psi()
 
     for i in range(n):
         re_norm(psi, i)
-    # psi = normalise(psi)
+    psi = normalise_psi(psi)
 
     for i in range(n):
         recalculate_energy(psi, i)
 
-    # mag_psi = numpy.sum(norms)
-    # psi = psi / numpy.sqrt(mag_psi)
-    E = energy_expectation()
+    return psi
 
-
-generate_psi()
 
 initialise()
-for i in range(n):
-    re_norm(psi, i)
-
-
-# psi = normalise(psi)
 
 
 def plurts():
@@ -375,7 +374,7 @@ def plurts():
 E = energy_expectation()
 print("Initial Energy:", E)
 # plurts()
-psi = ground_state(psi, number_iterations)
+psi = ground_state(number_iterations)
 E = energy_expectation()
 print("Final Energy:", E)
 # plurts()
