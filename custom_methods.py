@@ -5,19 +5,19 @@ import numpy
 # Used for Fourier Analysis of results
 from scipy import fftpack
 
-a = -20.0
-b = 20.0
-n = 2 ** 10 + 1
-# n = 10
-h = (b - a) / n
-inv_h_sq = h ** -2
-half_h = h * 0.5
+lower_bound = -20
+upper_bound = -lower_bound
+number_points = 2 ** 10 + 1
+
+step_size = (upper_bound - lower_bound) / number_points
+inv_h_sq = step_size ** -2
+half_h = step_size * 0.5
 
 hbar = 1.054571817 * 10 ** -34  # eV
 m = 9.1093837015 * 10 ** -31  # kg
 factor = -(hbar ** 2) / (2 * m)
 
-x = numpy.linspace(a, b, num=n, dtype=complex)
+x = numpy.linspace(lower_bound, upper_bound, num=number_points)
 k = 0.01
 # V = numpy.zeros(n)
 V = 0.5 * k * x ** 2
@@ -34,13 +34,13 @@ global normalisation_array
 # psi itself
 global psi
 
-hamiltonians_array = numpy.zeros(n, dtype=complex)
+hamiltonians_array = numpy.zeros(number_points, dtype=complex)
 
-infinitesimal_energy_expectations = numpy.zeros(n)
-energies_array = numpy.zeros(n)
-normalisation_array = numpy.zeros(n)
+infinitesimal_energy_expectations = numpy.zeros(number_points)
+energies_array = numpy.zeros(number_points)
+normalisation_array = numpy.zeros(number_points)
 
-psi = numpy.linspace(1, 1, n, dtype=complex)
+psi = numpy.linspace(1, 1, number_points, dtype=complex)
 mag_psi = psi.conj() * psi
 
 # number_iterations = 10000
@@ -50,7 +50,7 @@ number_iterations = 50000
 # number_iterations = 1000
 
 
-def re_integrate(i: int, f: numpy.ndarray, step=h):
+def re_integrate(i: int, f: numpy.ndarray, step=step_size):
     # rectangular rule, at only the given index to change the array
     # sum the array after
 
@@ -201,6 +201,7 @@ def tweak_psi(psi: numpy.ndarray, pos: int, tweak: complex):
     # Re calculate the energy at this entry as well
     recalculate_energy(psi, pos)
     # The tweaked energy value is the new <E>
+    # TODO: optimisation of this summation code, currently resums the entire array for one tiny change.
     E_new = energy_expectation()
 
     # return psi, E_new
@@ -223,7 +224,6 @@ def ground_state(number_iterations: int, seed="The Variational Principle"):
     """
     Calculates the ground state wavefunction for a given potential system, by fiinding the wavefunction with
     minimum expectation value in the energy <E>.
-    :param psi_start: The initial wavefunction guess.
     :param number_iterations: Number of times the wavefunction should be modified to obtain the final result.
     :param seed: A seed for the random number generator.
     :return: The normalised gorund state wavefunction.
@@ -244,7 +244,7 @@ def ground_state(number_iterations: int, seed="The Variational Principle"):
     for i in range(number_iterations):
 
         # Get a random x coord to sample
-        rand_x = random.randrange(0, n)
+        rand_x = random.randrange(0, number_points)
 
         # Generate a random number to alter the entry by.
         rand_y = random.random()
@@ -299,7 +299,7 @@ def ground_state(number_iterations: int, seed="The Variational Principle"):
 
 
 # p(x) = \frac{1}{\sqrt{ 2 \pi \sigma^2 }} e^{ - \frac{ (x - \mu)^2 } {2 \sigma^2} },
-def generate_psi(start=a, stop=b, number_samples=n):
+def generate_psi(start=lower_bound, stop=upper_bound, number_samples=number_points):
     """
     Creates a Gaussian distribution for the wavefunction psi
     :return:
@@ -307,8 +307,8 @@ def generate_psi(start=a, stop=b, number_samples=n):
 
     x = numpy.linspace(start, stop, number_samples)
 
-    mu = complex((a + b) / 2.0)
-    sigma = complex((b - a) / 4.0)
+    mu = complex((lower_bound + upper_bound) / 2.0)
+    sigma = complex((upper_bound - lower_bound) / 4.0)
     pi = complex(numpy.pi)
     A = 1 / numpy.sqrt(2 * pi * sigma ** 2)
     B = numpy.exp(- ((x - mu) ** 2) / (2 * sigma ** 2))
@@ -322,19 +322,18 @@ def initialise():
     Sets the initial values for the global arrays.
     """
 
-    psi = generate_psi()
+    # psi = generate_psi()
+    psi = numpy.linspace(1, 1, number_points)
 
-    for i in range(n):
+    for i in range(number_points):
         re_norm(psi, i)
-    psi = normalise_psi(psi)
+    # TODO: does this need to be normalised now?
+    # psi = normalise_psi(psi)
 
-    for i in range(n):
+    for i in range(number_points):
         recalculate_energy(psi, i)
 
     return psi
-
-
-initialise()
 
 
 def plurts():
@@ -371,8 +370,9 @@ def plurts():
     plt.show()
 
 
-E = energy_expectation()
-print("Initial Energy:", E)
+# psi = initialise()
+# E = energy_expectation()
+# print("Initial Energy:", E)
 # plurts()
 psi = ground_state(number_iterations)
 E = energy_expectation()
@@ -384,7 +384,6 @@ plt.title("Original $\psi$")
 plt.xlabel("x")
 plt.ylabel("$\psi$")
 plt.show()
-
 
 def fourier_analysis(psi):
     # Do the FT on the wavefunction
@@ -407,7 +406,7 @@ def fourier_analysis(psi):
     psi = fftpack.ifft(fft_psi)
 
     # Plot the final wavefunction to show the result.
-    x_range = numpy.linspace(a, b, len(psi.real))
+    x_range = numpy.linspace(lower_bound, upper_bound, len(psi.real))
     plt.plot(x_range, psi.real)
     plt.title("Smoothed Wavefunction $\psi$")
     plt.xlabel("x")
