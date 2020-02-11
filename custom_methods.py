@@ -218,7 +218,7 @@ def recalculate_energy(psi: numpy.ndarray, i: int):
 
 def energy_expectation():
     """
-    Calculates the <E> energy expectation value from the energues_array array
+    Calculates the <E> energy expectation value from the energies_array array
     :return: The energy expectation value <E> as a scalar.
     """
     # Get the energy from the array
@@ -307,6 +307,11 @@ def ground_state(number_iterations: int, seed="The Variational Principle"):
 
     # set up the wavefunction
     psi = initialise()
+    # TODO remove this tmp E array implementation
+    E_array = [0]
+    diffs_array = []
+    # min_diff = 10**-1
+    min_diff = 0.003
 
     # psi is already normalised by initialise()
     # and E is already calculated.
@@ -322,28 +327,19 @@ def ground_state(number_iterations: int, seed="The Variational Principle"):
         rand_x = random.randrange(0, number_points)
 
         # Generate a random number to alter the entry by.
-        rand_y = random.random()
-        # rand_y = 0
-        # imaginary_part = random.randint(0, 1)
-        # # True is the imaginary part:
-        # if imaginary_part:
-        #     rand_y = complex(0, random.random())
-        # else:
-        #     rand_y = complex(random.random())
+        # rand_y = random.random()
+        rand_y = 0
+        imaginary_part = random.randint(0, 1)
+        # True is the imaginary part:
+        if imaginary_part:
+            rand_y = complex(0, random.random())
+        else:
+            rand_y = complex(random.random())
 
         E_up = tweak_psi(psi, rand_x, rand_y)
         E_down = tweak_psi(psi, rand_x, -2 * rand_y)
-        # print("E before:", E)
-        # E_b = E
-        # E = tweak_psi(psi, rand_x, rand_y)
+        # reset psi
         tweak_psi(psi, rand_x, rand_y)
-        # E_A = E
-        # print("E after:", E)
-        # dE = E_b - E_A
-        # print("E diff:", dE, "\n")
-        # if dE != 0:
-        #     print("!!!")
-        #     break
 
         # Compare energies for tweaking the entry up versus down, and keep the change
         # that results in a lower overall expectation value for the energy.
@@ -351,23 +347,50 @@ def ground_state(number_iterations: int, seed="The Variational Principle"):
 
             # If increasing the value in the entry results in a lower overall <E>
             # set the change and keep it
+            # diffs_array += [abs(E - E_up)]
+            # if abs(E - E_up) < min_diff:
+            #     print(abs(E - E_up), " < ", min_diff)
+            #     break
             E = tweak_psi(psi, rand_x, rand_y)
+            # TODO remove
+            E_array += [E]
+            diffs_array += [abs(E_array[-1] + E_array[-2])]
 
         elif E_down < E_up and E_down < E:
 
             # If decreasing the entry results in a lower overall <E>,
             # reduce the value and keep it.
-            E = tweak_psi(psi, rand_x, -rand_y)
+            # diffs_array += [abs(E - E_down)]
+            # if abs(E - E_down) < min_diff:
+            #     print(abs(E - E_down), " << ", min_diff)
+            #     break
 
+            E = tweak_psi(psi, rand_x, -rand_y)
+            # TODO remove
+            E_array += [E]
+            diffs_array += [abs(E_array[-1] + E_array[-2])]
+
+        # TODO remove
+        if diffs_array[-1] < min_diff:
+            print(diffs_array[-1], "<", min_diff)
+            break
         # otherwise the psi should be left unchanged.
         # Same goes for Is, Es, norms, and the normalisation.
 
-    # Normalise the final wavefunction
-    # psi = normalise_psi(psi)
-    # psi = normalise(psi)
-    # A = numpy.sum(normalisation_array)
-    # print(A)
-    # psi /= numpy.sqrt(A)
+    # TODO remove:
+    plt.plot(E_array)
+    plt.title("Convergence of E?")
+    plt.ylabel("E (eV)")
+    plt.xlabel("count")
+    plt.show()
+
+    plt.plot(diffs_array)
+    plt.xlabel("count")
+    plt.ylabel("$\Delta E (eV)$")
+    plt.title("Change in E per iteration:")
+    plt.show()
+    print(diffs_array[-1])
+
     psi = normalise_psi(psi)
 
     return psi
@@ -404,7 +427,7 @@ def initialise():
     """
 
     # psi = generate_psi()
-    psi = numpy.linspace(1, 1, number_points)
+    psi = numpy.linspace(1, 1, number_points, dtype=complex)
 
     # set the normalisation factors in the normalisation arrays
     for i in range(number_points):
@@ -456,4 +479,5 @@ def fourier_analysis(psi):
     plt.ylabel("$\psi$")
     plt.show()
 
-# fourier_analysis(psi)
+
+fourier_analysis(psi)
