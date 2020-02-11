@@ -113,29 +113,14 @@ energies_array = numpy.zeros(number_points)
 normalisation_array = numpy.zeros(number_points)
 
 psi = numpy.linspace(1, 1, number_points, dtype=complex)
-mag_psi = psi.conj() * psi
+mag_psi = (psi.conj() * psi).real
 
-# number_iterations = 10000
 number_iterations = 50000
-
-
-# number_iterations = 1000
 
 
 def re_integrate(i: int, f: numpy.ndarray, step=step_size):
     # rectangular rule, at only the given index to change the array
     # sum the array after
-
-    # f_i = Is[i]
-    # Loop the indices back to the start if they overflow
-    # f_i_plus_i = Is[(i + 1) % n]
-    # Es[i] = (f_i + f_i_plus_i) * half_h
-
-    # Central Difference Rule:
-    # length = len(f)
-    # f_i = f[i]
-    # f_i_plus_1 = f[(i + 1) % length]
-    # out[i] = (f_i + f_i_plus_1) * 0.5 * step
 
     # Rectangular Rule:
     return f[i] * step
@@ -189,7 +174,7 @@ def second_derivative(f: numpy.ndarray, i: int, wrap=False):
     return div_2
 
 
-def hamil(psi: numpy.ndarray, i: int):
+def hamiltonian(psi: numpy.ndarray, i: int):
     """
     Calculates the Hamiltonian of the given psi wavefunction at the given index in the array.
     :param psi: The wavefunction to operate on.
@@ -197,10 +182,13 @@ def hamil(psi: numpy.ndarray, i: int):
     :return: The hamiltonian value at index i for the given psi.
     """
 
-    Tpi = factor * second_derivative(psi, i)
-    Vpi = V[i] * psi[i]
+    # The kinetic energy term of the hamiltonian
+    Tp_i = factor * second_derivative(psi, i)
+    # the potential energy term of the hamiltonian
+    Vp_i = V[i] * psi[i]
 
-    return Tpi + Vpi
+    # combine the kinetic + potential energies.
+    return Tp_i + Vp_i
 
 
 def recalculate_energy(psi: numpy.ndarray, i: int):
@@ -220,10 +208,11 @@ def recalculate_energy(psi: numpy.ndarray, i: int):
     global infinitesimal_energy_expectations
 
     # alters the H*psi value at index i
-    hamiltonians_array[i] = hamil(psi, i)
-
+    hamiltonians_array[i] = hamiltonian(psi, i)
+    # Get the value for psi * H * psi, is a purely real number, so parse it to real
     infinitesimal_energy_expectations[i] = (psi[i].conj() * hamiltonians_array[i]).real
 
+    # calculate the infinitesimal integration at this index
     energies_array[i] = re_integrate(i, infinitesimal_energy_expectations)
 
 
@@ -232,9 +221,11 @@ def energy_expectation():
     Calculates the <E> energy expectation value from the energues_array array
     :return: The energy expectation value <E> as a scalar.
     """
-
+    # Get the energy from the array
     non_normalised_E = numpy.sum(energies_array).real
+    # get the normalisation factor
     norm = numpy.sum(normalisation_array)
+    # normalise the energy
     normalised_E = non_normalised_E / norm
     return normalised_E
 
@@ -248,8 +239,10 @@ def re_norm(psi: numpy.ndarray, i: int):
     global mag_psi
     global normalisation_array
 
-    mag_psi[i] = psi[i].conj() * psi[i]
-    normalisation_array[i] = re_integrate(i, mag_psi).real
+    # Calculate the magnitude of the wavefunction, a purely real number
+    mag_psi[i] = (psi[i].conj() * psi[i]).real
+    # Calculate the infinitesimal integral for the magnitude at this index
+    normalisation_array[i] = re_integrate(i, mag_psi)
 
 
 def tweak_psi(psi: numpy.ndarray, pos: int, tweak: complex):
@@ -281,12 +274,21 @@ def tweak_psi(psi: numpy.ndarray, pos: int, tweak: complex):
 
 
 def normalise_psi(psi: numpy.ndarray):
+    """
+    Normalise the given wavefunction psi by the normalisation factor found in normalisation_array.
+    :param psi: The wavefunction to normalise.
+    :return: The normalised wavefunction.
+    """
     global normalisation_array
     global mag_psi
 
+    # The normalisation factor
     norm = numpy.sum(normalisation_array)
+    # Normalise the magnitude
     mag_psi /= norm
+    # normalise the wavefunction
     psi /= numpy.sqrt(norm)
+    # normalise the normalisation array
     normalisation_array /= norm
 
     return psi
@@ -303,6 +305,7 @@ def ground_state(number_iterations: int, seed="The Variational Principle"):
     global energies_array
     global infinitesimal_energy_expectations
 
+    # set up the wavefunction
     psi = initialise()
 
     # psi is already normalised by initialise()
@@ -373,17 +376,23 @@ def ground_state(number_iterations: int, seed="The Variational Principle"):
 # p(x) = \frac{1}{\sqrt{ 2 \pi \sigma^2 }} e^{ - \frac{ (x - \mu)^2 } {2 \sigma^2} },
 def generate_psi(start=lower_bound, stop=upper_bound, number_samples=number_points):
     """
-    Creates a Gaussian distribution for the wavefunction psi
-    :return:
+    Creates a Gaussian distribution for the wavefunction psi.
+    :return: A gaussian profile for psi.
     """
 
+    # Get an x set that spans the bounds
     x = numpy.linspace(start, stop, number_samples)
 
+    # the average around which the gaussian is centred
     mu = complex((lower_bound + upper_bound) / 2.0)
+    # The standard deviation of the wavefunction
     sigma = complex((upper_bound - lower_bound) / 4.0)
     pi = complex(numpy.pi)
+    # the first part of the gaussian
     A = 1 / numpy.sqrt(2 * pi * sigma ** 2)
+    # The second part of the gaussian
     B = numpy.exp(- ((x - mu) ** 2) / (2 * sigma ** 2))
+    # the gaussian profile
     psi = A * B
 
     return psi
@@ -397,59 +406,20 @@ def initialise():
     # psi = generate_psi()
     psi = numpy.linspace(1, 1, number_points)
 
+    # set the normalisation factors in the normalisation arrays
     for i in range(number_points):
         re_norm(psi, i)
-    # TODO: does this need to be normalised now?
-    # psi = normalise_psi(psi)
 
+    # set the energy values in the energy arrays
     for i in range(number_points):
         recalculate_energy(psi, i)
 
     return psi
 
 
-def plurts():
-    plt.plot(x, V)
-    plt.title("Potential")
-    plt.show()
-
-    plt.plot(x, psi.real)
-    plt.title("Real $\psi$")
-    plt.show()
-
-    plt.plot(x, psi.imag)
-    plt.title("Imaginary $\psi$")
-    plt.show()
-
-    plt.plot(x, infinitesimal_energy_expectations)
-    plt.title("Infinitesimal <E>s")
-    plt.show()
-
-    plt.plot(x, energies_array)
-    plt.title("Infinitesimal Energies")
-    plt.show()
-
-    plt.plot(x, mag_psi)
-    plt.title("$|\psi|^2$")
-    plt.show()
-
-    plt.plot(x, normalisation_array)
-    plt.title("NORMS")
-    plt.show()
-
-    plt.plot(x, hamiltonians_array)
-    plt.title("Infinitesimal Hamiltonians:")
-    plt.show()
-
-
-# psi = initialise()
-# E = energy_expectation()
-# print("Initial Energy:", E)
-# plurts()
 psi = ground_state(number_iterations)
 E = energy_expectation()
 print("Final Energy:", E)
-# plurts()
 
 plt.plot(x, psi.real)
 plt.title("Original $\psi$")
