@@ -7,14 +7,16 @@ from scipy import fftpack
 
 lower_bound = -20
 upper_bound = -lower_bound
-number_points = 2 ** 10 + 1
+number_points = 2 ** 7 + 1
 
-step_size = (upper_bound - lower_bound) / number_points
+step_size = (upper_bound - lower_bound) / (number_points - 1)
 inv_h_sq = step_size ** -2
 half_h = step_size * 0.5
 
-hbar = 1.054571817 * 10 ** -34  # eV
-m = 9.1093837015 * 10 ** -31  # kg
+# hbar = 1.054571817 * 10 ** -34  # eV
+hbar = 1
+# m = 9.1093837015 * 10 ** -31  # kg
+m = 1
 factor = -(hbar ** 2) / (2 * m)
 
 x = numpy.linspace(lower_bound, upper_bound, num=number_points)
@@ -64,6 +66,10 @@ def infinite_square_well(r: numpy.ndarray, wall_bounds=(200, 800)):
     :param wall_bounds: The points at which the well boundary starts.
     :return: The infinite potential well function.
     """
+
+    # TODO make implementation to handle inf and nan numbers in summations for energies,
+    #  not in this method, but is context from this.
+
     # Use the finite square well with infinite barriers.
     return finite_square_well(r, numpy.inf, wall_bounds)
 
@@ -86,9 +92,10 @@ def potential(r: numpy.ndarray):
     :return: A scalar ndarray of the values of the potential at each point in r.
     """
 
-    return harmonic_oscillator(r, 0.01)
-    # return finite_square_well(r, 1, (200, 800))
-    # return infinite_square_well(r, (200, 800))
+    # return harmonic_oscillator(r, 0.01)
+    return harmonic_oscillator(r, 1.0)
+    # return finite_square_well(r, 1.0, (int(number_points / 5), int(number_points * 4 / 5)))
+    # return infinite_square_well(r,  (int(number_points / 5), int(number_points * 4 / 5)))
     # return free_particle(r)
 
 
@@ -112,10 +119,12 @@ infinitesimal_energy_expectations = numpy.zeros(number_points)
 energies_array = numpy.zeros(number_points)
 normalisation_array = numpy.zeros(number_points)
 
-psi = numpy.linspace(1, 1, number_points, dtype=complex)
+# psi = numpy.linspace(1, 1, number_points, dtype=complex)
+psi = numpy.zeros(number_points, dtype=complex)
 mag_psi = (psi.conj() * psi).real
 
-number_iterations = 50000
+# number_iterations = 50000
+number_iterations = 10 ** 5
 
 
 def re_integrate(i: int, f: numpy.ndarray, step=step_size):
@@ -123,7 +132,29 @@ def re_integrate(i: int, f: numpy.ndarray, step=step_size):
     # sum the array after
 
     # Rectangular Rule:
-    return f[i] * step
+    # return f[i] * step
+
+    # Trapezoidal Rule:
+    f_i = f[i]
+    f_i_plus_1 = f_i
+    # Default to the rectangular rule for the borders
+    if i + 1 < len(f) - 1:
+        f_i_plus_1 = f[i + 1]
+
+    average_f = (f_i + f_i_plus_1) / 2.0
+    return average_f * step
+
+    # # Simpson's Rule:
+    # f_i = f[i]
+    # f_i1 = f_i
+    # f_i2 = f_i
+    # # Default to the rectangular rule for the border case:
+    # if i + 2 < len(f) - 1:
+    #     f_i1 = f[i + 1]
+    #     f_i2 = f[i + 2]
+    #
+    # average_f = (f_i + 4 * f_i1 + f_i2) / 3.0
+    # return average_f * step
 
 
 def second_derivative(f: numpy.ndarray, i: int, wrap=False):
@@ -191,7 +222,7 @@ def hamiltonian(psi: numpy.ndarray, i: int):
     return Tp_i + Vp_i
 
 
-def recalculate_energy(psi: numpy.ndarray, i: int):
+def recalculate_energy_arrays(psi: numpy.ndarray, i: int):
     """
     Recalculates the <E> at the given i for the given psi.
     :param psi: The wavefunction to use for the expectation value.
@@ -222,15 +253,15 @@ def energy_expectation():
     :return: The energy expectation value <E> as a scalar.
     """
     # Get the energy from the array
-    non_normalised_E = numpy.sum(energies_array).real
+    non_normalised_E = numpy.nansum(energies_array).real
     # get the normalisation factor
-    norm = numpy.sum(normalisation_array)
+    norm = numpy.nansum(normalisation_array)
     # normalise the energy
     normalised_E = non_normalised_E / norm
     return normalised_E
 
 
-def re_norm(psi: numpy.ndarray, i: int):
+def recalculate_normalisation_arrays(psi: numpy.ndarray, i: int):
     """
     Recalculates the normalisation for the given psi wavefunction at the index i.
     :param psi: The wavefunction to re normalise.
@@ -258,15 +289,15 @@ def tweak_psi(psi: numpy.ndarray, pos: int, tweak: complex):
     psi[pos] += tweak
 
     # Recompute the normalisation for this entry
-    re_norm(psi, pos)
+    recalculate_normalisation_arrays(psi, pos)
     # Re normalise psi
     # psi = normalise(psi)
     # normalise_arrays()
 
     # Re calculate the energy at this entry as well
-    recalculate_energy(psi, pos)
+    recalculate_energy_arrays(psi, pos)
     # The tweaked energy value is the new <E>
-    # TODO: optimisation of this summation code, currently resums the entire array for one tiny change.
+    # TODO: optimisation of this summation code, currently re-sums the entire array for one tiny change.
     E_new = energy_expectation()
 
     # return psi, E_new
@@ -283,7 +314,7 @@ def normalise_psi(psi: numpy.ndarray):
     global mag_psi
 
     # The normalisation factor
-    norm = numpy.sum(normalisation_array)
+    norm = numpy.nansum(normalisation_array)
     # Normalise the magnitude
     mag_psi /= norm
     # normalise the wavefunction
@@ -307,11 +338,6 @@ def ground_state(number_iterations: int, seed="The Variational Principle"):
 
     # set up the wavefunction
     psi = initialise()
-    # TODO remove this tmp E array implementation
-    E_array = [0]
-    diffs_array = []
-    # min_diff = 10**-1
-    min_diff = 0.003
 
     # psi is already normalised by initialise()
     # and E is already calculated.
@@ -327,14 +353,15 @@ def ground_state(number_iterations: int, seed="The Variational Principle"):
         rand_x = random.randrange(0, number_points)
 
         # Generate a random number to alter the entry by.
-        # rand_y = random.random()
-        rand_y = 0
-        imaginary_part = random.randint(0, 1)
-        # True is the imaginary part:
-        if imaginary_part:
-            rand_y = complex(0, random.random())
-        else:
-            rand_y = complex(random.random())
+        rand_y = random.random()
+        # rand_y = 0
+        # imaginary_part = random.randint(0, 1)
+        # # True is the imaginary part:
+        # if imaginary_part:
+        #     rand_y = complex(0, random.random())
+        # else:
+        #     rand_y = complex(random.random())
+        rand_y *= (number_iterations - i) / number_iterations
 
         E_up = tweak_psi(psi, rand_x, rand_y)
         E_down = tweak_psi(psi, rand_x, -2 * rand_y)
@@ -347,49 +374,17 @@ def ground_state(number_iterations: int, seed="The Variational Principle"):
 
             # If increasing the value in the entry results in a lower overall <E>
             # set the change and keep it
-            # diffs_array += [abs(E - E_up)]
-            # if abs(E - E_up) < min_diff:
-            #     print(abs(E - E_up), " < ", min_diff)
-            #     break
             E = tweak_psi(psi, rand_x, rand_y)
-            # TODO remove
-            E_array += [E]
-            diffs_array += [abs(E_array[-1] + E_array[-2])]
 
         elif E_down < E_up and E_down < E:
 
             # If decreasing the entry results in a lower overall <E>,
             # reduce the value and keep it.
-            # diffs_array += [abs(E - E_down)]
-            # if abs(E - E_down) < min_diff:
-            #     print(abs(E - E_down), " << ", min_diff)
-            #     break
 
             E = tweak_psi(psi, rand_x, -rand_y)
-            # TODO remove
-            E_array += [E]
-            diffs_array += [abs(E_array[-1] + E_array[-2])]
 
-        # TODO remove
-        if diffs_array[-1] < min_diff:
-            print(diffs_array[-1], "<", min_diff)
-            break
         # otherwise the psi should be left unchanged.
         # Same goes for Is, Es, norms, and the normalisation.
-
-    # TODO remove:
-    plt.plot(E_array)
-    plt.title("Convergence of E?")
-    plt.ylabel("E (eV)")
-    plt.xlabel("count")
-    plt.show()
-
-    plt.plot(diffs_array)
-    plt.xlabel("count")
-    plt.ylabel("$\Delta E (eV)$")
-    plt.title("Change in E per iteration:")
-    plt.show()
-    print(diffs_array[-1])
 
     psi = normalise_psi(psi)
 
@@ -431,53 +426,68 @@ def initialise():
 
     # set the normalisation factors in the normalisation arrays
     for i in range(number_points):
-        re_norm(psi, i)
+        recalculate_normalisation_arrays(psi, i)
 
     # set the energy values in the energy arrays
     for i in range(number_points):
-        recalculate_energy(psi, i)
+        recalculate_energy_arrays(psi, i)
 
     return psi
 
 
+plt.plot(x, V)
+plt.plot(x, psi)
+plt.title("Pre-calculated psi:")
+plt.xlabel("x")
+plt.ylabel("V & $\psi$")
+plt.legend(("V", "$\psi$"))
+plt.show()
+
+import time
+
+t1 = time.time()
 psi = ground_state(number_iterations)
+t2 = time.time()
+print("Time for", number_iterations, "samples:", t2 - t1, "s.")
 E = energy_expectation()
 print("Final Energy:", E)
 
-plt.plot(x, psi.real)
-plt.title("Original $\psi$")
+plt.plot(x, V)
+plt.plot(x, psi)
+plt.title("Post-calculated psi:")
 plt.xlabel("x")
-plt.ylabel("$\psi$")
+plt.ylabel("V & $\psi$")
+plt.legend(("V", "$\psi$"))
+plt.show()
+
+plt.plot(x, psi.conj() * psi)
+plt.title("Original $|\psi|^2$")
+plt.xlabel("x")
+plt.ylabel("$|\psi|^2$")
 plt.show()
 
 
 def fourier_analysis(psi):
     # Do the FT on the wavefunction
-    fft_psi = fftpack.fft(psi.real)
+    fft_psi = fftpack.fft(psi.conj() * psi)
     # Half the produced value as the FT is symmetric
     fft_psi = fft_psi[:int(len(fft_psi) / 2)]
-    # plt.plot(x, fft_psi)
-
-    # Plot the FT to visualise the results.
-    # plt.plot(fft_psi)
-    # plt.show()
 
     # Chop the FT to keep only the most important harmonics
-    fft_psi = fft_psi[:33]
-    # Plot the minimised FT
-    # plt.plot(fft_psi)
-    # plt.show()
+    fft_psi = fft_psi[:50]
 
     # Perform an inverse FT to get the smoothed wavefunction back
-    psi = fftpack.ifft(fft_psi)
+    smoothed_psi_sq = fftpack.ifft(fft_psi)
+    step = (upper_bound - lower_bound) / len(smoothed_psi_sq)
+    A = numpy.nansum(smoothed_psi_sq) * step
+    smoothed_psi_sq /= A
 
     # Plot the final wavefunction to show the result.
-    x_range = numpy.linspace(lower_bound, upper_bound, len(psi.real))
-    plt.plot(x_range, psi.real)
-    plt.title("Smoothed Wavefunction $\psi$")
+    x_range = numpy.linspace(lower_bound, upper_bound, len(smoothed_psi_sq))
+    plt.plot(x_range, smoothed_psi_sq)
+    plt.title("Smoothed Wavefunction $|\psi|^2$")
     plt.xlabel("x")
-    plt.ylabel("$\psi$")
+    plt.ylabel("$|\psi|^2$")
     plt.show()
 
-
-fourier_analysis(psi)
+# fourier_analysis(psi)
