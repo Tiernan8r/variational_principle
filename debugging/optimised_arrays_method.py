@@ -2,12 +2,14 @@ import random
 
 import matplotlib.pyplot as plt
 import numpy
+import scipy.integrate as integrate
 # Used for Fourier Analysis of results
 from scipy import fftpack
 
 lower_bound = -20
 upper_bound = -lower_bound
-number_points = 2 ** 7 + 1
+# TODO: find Newton-Cotes method that can go above 2**5+1?
+number_points = 2 ** 5 + 1
 
 step_size = (upper_bound - lower_bound) / (number_points - 1)
 inv_h_sq = step_size ** -2
@@ -19,7 +21,7 @@ hbar = 1
 m = 1
 factor = -(hbar ** 2) / (2 * m)
 
-x = numpy.linspace(lower_bound, upper_bound, num=number_points)
+x = numpy.linspace(lower_bound, upper_bound, number_points)
 
 
 def free_particle(r: numpy.ndarray):
@@ -98,7 +100,6 @@ def potential(r: numpy.ndarray):
     # return infinite_square_well(r,  (int(number_points / 5), int(number_points * 4 / 5)))
     # return free_particle(r)
 
-
 V = potential(x)
 
 # Array containing all the H(psi)
@@ -126,35 +127,45 @@ mag_psi = (psi.conj() * psi).real
 # number_iterations = 50000
 number_iterations = 10 ** 5
 
+An, B = integrate.newton_cotes(number_points - 1, 1)
 
-def re_integrate(i: int, f: numpy.ndarray, step=step_size):
-    # rectangular rule, at only the given index to change the array
-    # sum the array after
+plt.plot(x, An)
+plt.title("Newton-Cotes Coefficients:")
+plt.show()
 
-    # Rectangular Rule:
-    # return f[i] * step
 
-    # Trapezoidal Rule:
-    f_i = f[i]
-    f_i_plus_1 = f_i
-    # Default to the rectangular rule for the borders
-    if i + 1 < len(f) - 1:
-        f_i_plus_1 = f[i + 1]
+def re_integrate(f: numpy.ndarray, i: int, step=step_size):
+    return An[i] * f[i] * step
 
-    average_f = (f_i + f_i_plus_1) / 2.0
-    return average_f * step
 
-    # # Simpson's Rule:
-    # f_i = f[i]
-    # f_i1 = f_i
-    # f_i2 = f_i
-    # # Default to the rectangular rule for the border case:
-    # if i + 2 < len(f) - 1:
-    #     f_i1 = f[i + 1]
-    #     f_i2 = f[i + 2]
-    #
-    # average_f = (f_i + 4 * f_i1 + f_i2) / 3.0
-    # return average_f * step
+# def re_integrate(f: numpy.ndarray, i: int, step=step_size):
+#     # rectangular rule, at only the given index to change the array
+#     # sum the array after
+#
+#     # Rectangular Rule:
+#     # return f[i] * step
+#
+#     # Trapezoidal Rule:
+#     f_i = f[i]
+#     f_i_plus_1 = f_i
+#     # Default to the rectangular rule for the borders
+#     if i + 1 < len(f):
+#         f_i_plus_1 = f[i + 1]
+#
+#     average_f = (f_i + f_i_plus_1) / 2.0
+#     return average_f * step
+#
+#     # # Simpson's Rule:
+#     # f_i = f[i]
+#     # f_i1 = f_i
+#     # f_i2 = f_i
+#     # # Default to the rectangular rule for the border case:
+#     # if i + 2 < len(f) - 1:
+#     #     f_i1 = f[i + 1]
+#     #     f_i2 = f[i + 2]
+#     #
+#     # average_f = (f_i + 4 * f_i1 + f_i2) / 3.0
+#     # return average_f * step
 
 
 def second_derivative(f: numpy.ndarray, i: int, wrap=False):
@@ -212,11 +223,15 @@ def hamiltonian(psi: numpy.ndarray, i: int):
     :param i: The index to do the operation at.
     :return: The hamiltonian value at index i for the given psi.
     """
+    global V
+    global factor
 
     # The kinetic energy term of the hamiltonian
     Tp_i = factor * second_derivative(psi, i)
     # the potential energy term of the hamiltonian
-    Vp_i = V[i] * psi[i]
+    V_i = V[i]
+    psi_i = psi[i]
+    Vp_i = V_i * psi_i
 
     # combine the kinetic + potential energies.
     return Tp_i + Vp_i
@@ -239,12 +254,15 @@ def recalculate_energy_arrays(psi: numpy.ndarray, i: int):
     global infinitesimal_energy_expectations
 
     # alters the H*psi value at index i
-    hamiltonians_array[i] = hamiltonian(psi, i)
+    h = hamiltonian(psi, i)
+    hamiltonians_array[i] = h
     # Get the value for psi * H * psi, is a purely real number, so parse it to real
-    infinitesimal_energy_expectations[i] = (psi[i].conj() * hamiltonians_array[i]).real
+    inf_energy = (psi[i].conj() * h).real
+    infinitesimal_energy_expectations[i] = inf_energy
 
     # calculate the infinitesimal integration at this index
-    energies_array[i] = re_integrate(i, infinitesimal_energy_expectations)
+    energy = re_integrate(infinitesimal_energy_expectations, i)
+    energies_array[i] = energy
 
 
 def energy_expectation():
@@ -271,9 +289,11 @@ def recalculate_normalisation_arrays(psi: numpy.ndarray, i: int):
     global normalisation_array
 
     # Calculate the magnitude of the wavefunction, a purely real number
-    mag_psi[i] = (psi[i].conj() * psi[i]).real
+    magnitude = (psi[i].conj() * psi[i]).real
+    mag_psi[i] = magnitude
     # Calculate the infinitesimal integral for the magnitude at this index
-    normalisation_array[i] = re_integrate(i, mag_psi)
+    norm = re_integrate(mag_psi, i)
+    normalisation_array[i] = norm
 
 
 def tweak_psi(psi: numpy.ndarray, pos: int, tweak: complex):
@@ -290,9 +310,6 @@ def tweak_psi(psi: numpy.ndarray, pos: int, tweak: complex):
 
     # Recompute the normalisation for this entry
     recalculate_normalisation_arrays(psi, pos)
-    # Re normalise psi
-    # psi = normalise(psi)
-    # normalise_arrays()
 
     # Re calculate the energy at this entry as well
     recalculate_energy_arrays(psi, pos)
@@ -300,7 +317,6 @@ def tweak_psi(psi: numpy.ndarray, pos: int, tweak: complex):
     # TODO: optimisation of this summation code, currently re-sums the entire array for one tiny change.
     E_new = energy_expectation()
 
-    # return psi, E_new
     return E_new
 
 
@@ -313,7 +329,15 @@ def normalise_psi(psi: numpy.ndarray):
     global normalisation_array
     global mag_psi
 
-    # The normalisation factor
+    # import scipy.integrate
+    #
+    # norm = scipy.integrate.romb(psi.conj() * psi).real
+    # psi /= numpy.sqrt(norm)
+    # normalisation_array /= norm
+    # mag_psi /= norm
+    #
+    # return psi
+
     norm = numpy.nansum(normalisation_array)
     # Normalise the magnitude
     mag_psi /= norm
