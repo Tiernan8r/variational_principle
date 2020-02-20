@@ -62,7 +62,6 @@ def main():
     x = numpy.linspace(a, b, N)
 
     psi = numpy.ones(N)
-    actual_psi = normalise(numpy.exp(- x ** 2 * 0.5), dx)
     psi[0], psi[-1] = 0, 0
     V = potential(x)
 
@@ -72,11 +71,9 @@ def main():
 
     plt.plot(x, V)
     plt.plot(x, psi * scale)
-    # plt.show()
 
-    # new_E = energy(psi, V, dx)
     prev_E = energy(psi, V, dx)
-    print("initial energy:", prev_E)
+    print("Initial Energy:", prev_E)
 
     num_iterations = 100000
     for i in range(num_iterations):
@@ -98,21 +95,12 @@ def main():
             psi = normalise(psi, dx)
 
     plt.plot(x, psi * scale)
-    plt.plot(x, actual_psi * scale)
     plt.title("$\psi$ functions")
     plt.xlabel("x")
     plt.ylabel("$\psi$")
-    plt.legend(("Original $\psi$", "potential", "Normalised $\psi$", "Final $\psi$", "Actual $\psi$"))
+    plt.legend(("Original $\psi$", "potential", "Normalised $\psi$", "Final $\psi$"))
     plt.show()
     print("Final Energy:", prev_E)
-
-    diff_psi = actual_psi - psi
-    plt.plot(x, diff_psi)
-    plt.title("Difference in $\psi$ calculation:")
-    plt.xlabel("x")
-    plt.ylabel("difference in $\psi$")
-    plt.show()
-    print("Integral of Difference:", numpy.sum(diff_psi) * dx)
 
 
 main()
