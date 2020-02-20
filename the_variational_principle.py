@@ -44,6 +44,12 @@ def energy(psi: numpy.ndarray, V: numpy.ndarray, dx: float):
     return total_energy * dx
 
 
+# def energy(psi: numpy.ndarray, V: numpy.ndarray, dx: float):
+#     Vp = V * psi
+#     Tp = factor * numpy.diff(psi, 2, append=0, prepend=0)
+#     return numpy.sum(psi * (Tp + Vp)) * dx
+
+
 def potential(x: numpy.ndarray):
     return 0.5 * x ** 2
 
