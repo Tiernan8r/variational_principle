@@ -1,7 +1,9 @@
 import random
+import time
 
 import matplotlib.pyplot as plt
 import numpy
+import scipy.linalg as linalg
 
 # global constants:
 hbar = 6.582119569 * 10 ** -16  # 6.582119569×10−16 (from wikipedia)
@@ -54,15 +56,35 @@ def potential(x: numpy.ndarray):
     return 0.5 * x ** 2
 
 
-def ground_state(start, stop, num_points, num_iterations):
+# TODO should these states be normalised?
+def generate_orthogonal_states(pre_existing_states: numpy.ndarray, size):
+    # there are no known states already
+    if pre_existing_states.size == 0:
+        return numpy.identity(size)
+    else:
+        orthogonal_states = linalg.null_space(pre_existing_states)
+        return orthogonal_states.transpose()
+
+
+def nth_state(start: float, stop: float, dimension: int, num_iterations: int, previous_states: numpy.ndarray):
+    # the iteration number
+    n = 0
+    if previous_states.size != 0:
+        n = previous_states.shape[0]
+
+    t1 = time.time()
+    states = generate_orthogonal_states(previous_states, dimension)
+    # Get the number of rows
+    row_size = states.shape[0]
+
     random.seed("THE-VARIATIONAL-PRINCIPLE")
 
-    dx = (stop - start) / num_points
+    dx = (stop - start) / dimension
 
-    x = numpy.linspace(start, stop, num_points)
+    x = numpy.linspace(start, stop, dimension)
     V = potential(x)
 
-    psi = numpy.ones(num_points)
+    psi = numpy.ones(dimension)
     psi[0], psi[-1] = 0, 0
 
     psi = normalise(psi, dx)
@@ -71,24 +93,32 @@ def ground_state(start, stop, num_points, num_iterations):
     print("Initial Energy:", previous_energy)
 
     for i in range(num_iterations):
-        rand_x = random.randrange(1, num_points - 1)
-        # rand_x = random.randrange(N)
+        # rand_x = random.randrange(1, dimension - 1)
+        rand_x = random.randrange(1, row_size - 1)
         rand_y = random.random() * 0.1 * (num_iterations - i) / num_iterations
 
         if random.random() > 0.5:
             rand_y *= -1
 
-        psi[rand_x] += rand_y
+        psi += states[rand_x] * rand_y
         psi = normalise(psi, dx)
 
         new_energy = energy(psi, V, dx)
         if new_energy < previous_energy:
             previous_energy = new_energy
         else:
-            psi[rand_x] -= rand_y
+            psi -= states[rand_x] * rand_y
             psi = normalise(psi, dx)
 
     print("Final Energy:", energy(psi, V, dx))
+    t2 = time.time()
+    print("The time for the " + str(n) + "th iteration is:", t2 - t1, "s.\n")
+
+    plt.plot(x, psi)
+    plt.title("The {}th State for the Harmonic Oscillator:".format(n))
+    plt.ylabel("$\psi$")
+    plt.xlabel("x")
+    plt.show()
 
     return psi
 
@@ -97,40 +127,31 @@ def main():
     a, b, N, num_iterations = -10, 10, 100, 10 ** 5
     # a, b, N, num_iterations = 0, 10, 100, 10 ** 5
     x = numpy.linspace(a, b, N)
-    V = potential(x)
+    # V = potential(x)
 
     dx = (b - a) / N
     generate_derivative_matrix(N, dx)
-    psi = ground_state(a, b, N, num_iterations)
+    existing_states = numpy.array([])
+    number_states = 5
+    for i in range(number_states):
+        psi = nth_state(a, b, N, num_iterations, existing_states)
+        # existing_states += [psi]
+        if existing_states.size == 0:
+            existing_states = numpy.array([psi])
+        else:
+            existing_states = numpy.vstack((existing_states, psi))
 
-    scale = 10
-    plt.plot(x, V)
-    plt.plot(x, psi * scale)
+    for j in range(existing_states.shape[0]):
+        plt.plot(x, existing_states[j])
 
-    plt.title("Ground State $\psi$ for the Perturbed Finite Square Well:")
+    plt.title("Wavefunctions $\psi$ for the Linear Harmonic Oscillator:")
     plt.xlabel("x")
     plt.ylabel("$\psi$")
-    # plt.legend(("Original $\psi$", "potential", "Normalised $\psi$", "Final $\psi$"))
-    plt.legend(("Potential", "Ground State"))
-    # plt.legend(("Ground State", "Analytical Solution"))
+    # # plt.legend(("Original $\psi$", "potential", "Normalised $\psi$", "Final $\psi$"))
+    # plt.legend(("Potential", "Ground State", "Second State", "Third State", "Fourth State", "..."))
+    plt.legend(("Ground State", "Second State", "Third State", "Fourth State", "..."))
+    # # plt.legend(("Ground State", "Analytical Solution"))
     plt.show()
-
-    # #Comparison for actual inf sq well:
-    # third = N // 3
-    # psi_rel = psi[third:2 * third + 1]
-    #
-    # L = len(psi_rel) * dx
-    # x_rel = numpy.linspace(0, L, len(psi_rel))
-    # psi_anal = normalise(numpy.sin(numpy.pi / L * x_rel), dx)
-    #
-    # print(len(psi_rel))
-    # plt.plot(x_rel, psi_rel)
-    # plt.plot(x_rel, psi_anal)
-    # plt.title("Comparison of Analytical to Computed $\psi$ for the Infinite Square Well:")
-    # plt.xlabel("x")
-    # plt.ylabel("$\psi$")
-    # plt.legend(("Computed", "Analytical"))
-    # plt.show()
 
 
 main()
