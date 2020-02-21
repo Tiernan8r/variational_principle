@@ -29,39 +29,9 @@ def generate_derivative_matrix(dimensions: int, dx):
     return A * (dx ** -2)
 
 
-# def second_derivative(f: numpy.ndarray, i: int, dx: float):
-#     inv_h_sq = dx ** -2
-#     # forward difference for left edge:
-#     if i == 0:
-#         integrand = f[i] - 2 * f[i + 1] + f[i + 2]
-#     # backward difference for right edge:
-#     elif i == len(f) - 1:
-#         integrand = f[i - 2] - 2 * f[i - 1] + f[i]
-#     # central difference for non edge cases
-#     else:
-#         integrand = f[i - 1] - 2 * f[i] + f[i + 1]
-#
-#     return integrand * inv_h_sq
-
 def second_derivative(f):
     global A
     return numpy.dot(A, f)
-
-
-# def energy(psi: numpy.ndarray, V: numpy.ndarray, dx: float):
-#     total_energy = 0
-#     # for i in range(1, len(psi) - 1):
-#     for i in range(len(psi)):
-#
-#         if not numpy.isnan(V[i]) or numpy.isinf(V[i]):
-#             T = factor * second_derivative(psi, i, dx)
-#             # T = factor * (psi[i - 1] - 2 * psi[i] + psi[i + 1]) * (dx ** -2)
-#             Vp = V[i] * psi[i]
-#             E = psi[i] * (T + Vp)
-#
-#             total_energy += E
-#
-#     return total_energy * dx
 
 
 def energy(psi: numpy.ndarray, V: numpy.ndarray, dx: float):
