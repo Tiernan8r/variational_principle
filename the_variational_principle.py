@@ -57,13 +57,13 @@ def potential(x: numpy.ndarray):
     return 0.5 * x ** 2
 
 
-def generate_orthogonal_states(pre_existing_states: numpy.ndarray, size):
+def gen_orthonormal_states(pre_existing_states: numpy.ndarray, size):
     # there are no known states already
     if pre_existing_states.size == 0:
         return numpy.identity(size)
     else:
-        orthogonal_states = linalg.null_space(pre_existing_states)
-        return orthogonal_states.transpose()
+        orthonormal_states = linalg.null_space(pre_existing_states)
+        return orthonormal_states.transpose()
 
 
 def nth_state(start: float, stop: float, dimension: int, num_iterations: int, previous_states: numpy.ndarray):
@@ -73,7 +73,7 @@ def nth_state(start: float, stop: float, dimension: int, num_iterations: int, pr
         n = previous_states.shape[0]
 
     t1 = time.time()
-    states = generate_orthogonal_states(previous_states, dimension)
+    states = gen_orthonormal_states(previous_states, dimension)
     # Get the number of rows
     row_size = states.shape[0]
 
@@ -154,13 +154,13 @@ def main():
     plt.show()
 
     ground_psi = existing_states[0]
-    orthogonal_states = generate_orthogonal_states(existing_states, N)
+    orthonormal_states = gen_orthonormal_states(existing_states, N)
     delta = 0.01
-    for j in range(len(orthogonal_states)):
-        if abs(orthogonal_states[j][0]) > delta:
-            plt.plot(x, orthogonal_states[j])
-            print(orthogonal_states[j][0])
-    plt.title("Error in Orthogonal States:")
+    for j in range(len(orthonormal_states)):
+        if abs(orthonormal_states[j][0]) > delta:
+            plt.plot(x, orthonormal_states[j])
+            print(orthonormal_states[j][0])
+    plt.title("Error in Orthonormal States:")
     plt.show()
 
 
