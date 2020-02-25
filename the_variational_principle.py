@@ -6,8 +6,8 @@ import numpy
 import scipy.linalg as linalg
 
 # global constants:
-hbar = 6.582119569 * 10 ** -16  # 6.582119569×10−16 (from wikipedia)
-m = 9.1093837015 * 10 ** -31  # 9.1093837015(28)×10−31
+hbar = 6.582119569 * 10 ** -16  # 6.582119569x10^16 (from wikipedia)
+m = 9.1093837015 * 10 ** -31  # 9.1093837015(28)x10^31
 factor = -(hbar ** 2) / (2 * m)
 
 
@@ -40,12 +40,10 @@ def second_derivative(f):
 def energy(psi: numpy.ndarray, V: numpy.ndarray, dx: float):
     Vp = V * psi
     Tp = factor * second_derivative(psi)
-    return numpy.sum(psi * (Tp + Vp)) * dx
+    return numpy.nansum(psi * (Tp + Vp)) * dx
 
 
 def potential(x: numpy.ndarray):
-    # return 0.5 * x ** 2
-
     # length = len(x)
     # third = length // 3
     # # mid, bef = numpy.zeros(third + 1), numpy.linspace(numpy.inf, numpy.inf, third)
@@ -115,7 +113,7 @@ def nth_state(start: float, stop: float, dimension: int, num_iterations: int, pr
     print("The time for the " + str(n) + "th iteration is:", t2 - t1, "s.\n")
 
     plt.plot(x, psi)
-    plt.title("The {}th State for the Harmonic Oscillator:".format(n))
+    plt.title("The {}th State for the Finite Square Well:".format(n))
     plt.ylabel("$\psi$")
     plt.xlabel("x")
     plt.show()
@@ -125,14 +123,13 @@ def nth_state(start: float, stop: float, dimension: int, num_iterations: int, pr
 
 def main():
     a, b, N, num_iterations = -10, 10, 100, 10 ** 5
-    # a, b, N, num_iterations = -10, 10, 1000, 10 ** 6
     x = numpy.linspace(a, b, N)
     # V = potential(x)
 
     dx = (b - a) / N
     generate_derivative_matrix(N, dx)
     existing_states = numpy.array([])
-    number_states = 1
+    number_states = 5
     for i in range(number_states):
         psi = nth_state(a, b, N, num_iterations, existing_states)
         # existing_states += [psi]
@@ -144,7 +141,7 @@ def main():
     for j in range(existing_states.shape[0]):
         plt.plot(x, existing_states[j])
 
-    plt.title("Wavefunctions $\psi$ for the Linear Harmonic Oscillator:")
+    plt.title("Wavefunctions $\psi$ for the Finite Square Well:")
     plt.xlabel("x")
     plt.ylabel("$\psi$")
     # # plt.legend(("Original $\psi$", "potential", "Normalised $\psi$", "Final $\psi$"))
@@ -155,11 +152,9 @@ def main():
 
     ground_psi = existing_states[0]
     orthonormal_states = gen_orthonormal_states(existing_states, N)
-    delta = 0.01
     for j in range(len(orthonormal_states)):
-        if abs(orthonormal_states[j][0]) > delta:
+        if abs(orthonormal_states[j][j]) > 0.01:
             plt.plot(x, orthonormal_states[j])
-            print(orthonormal_states[j][0])
     plt.title("Error in Orthonormal States:")
     plt.show()
 
