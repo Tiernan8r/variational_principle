@@ -46,9 +46,8 @@ def energy(psi: numpy.ndarray, V: numpy.ndarray, dx: float):
 def potential(x: numpy.ndarray):
     # length = len(x)
     # third = length // 3
-    # # mid, bef = numpy.zeros(third + 1), numpy.linspace(numpy.inf, numpy.inf, third)
-    # mid, bef = numpy.zeros(third + 1) + 0.3 * numpy.linspace(0, (x[1] - x[0]) * (third + 1), third + 1), numpy.linspace(
-    #     10, 10, third)
+    # mid, bef = numpy.zeros(third + 1), numpy.linspace(numpy.inf, numpy.inf, third)
+    # # mid, bef = numpy.zeros(third + 1), numpy.linspace(10, 10, third)
     # aft = bef.copy()
     # return numpy.concatenate((bef, mid, aft))
 
@@ -61,7 +60,25 @@ def gen_orthonormal_states(pre_existing_states: numpy.ndarray, size):
         return numpy.identity(size)
     else:
         orthonormal_states = linalg.null_space(pre_existing_states)
+        # print(len(pre_existing_states), "# PRE EXISTING STATES!")
+        # plt.plot(orthonormal_states)
+        # plt.title("BEFORE CHANGE? " + str(len(pre_existing_states)))
+        # plt.show()
+        # print("ORTHONORMAL STATES FOR:", len(pre_existing_states), "STATES:")
+        # print(orthonormal_states)
+        # print()
+        n = len(pre_existing_states)
+        for j in range(n):
+            for k in range(len(orthonormal_states[n])):
+                # print("(", j, ",", k, ") =", orthonormal_states[j, k])
+                orthonormal_states[j][k] = 0
+
+        # plt.plot(orthonormal_states)
+        # plt.title("AFTER CHANGE? " + str(len(pre_existing_states)))
+        # plt.show()
+
         return orthonormal_states.transpose()
+        # return orthonormal_states
 
 
 def nth_state(start: float, stop: float, dimension: int, num_iterations: int, previous_states: numpy.ndarray):
@@ -72,8 +89,10 @@ def nth_state(start: float, stop: float, dimension: int, num_iterations: int, pr
 
     t1 = time.time()
     states = gen_orthonormal_states(previous_states, dimension)
-    # Get the number of rows
+    print(states)
     row_size = states.shape[0]
+    num_states = len(states)
+    print(num_states, "pre-existing states.")
 
     random.seed("THE-VARIATIONAL-PRINCIPLE")
 
@@ -85,6 +104,18 @@ def nth_state(start: float, stop: float, dimension: int, num_iterations: int, pr
     psi = numpy.ones(dimension)
     psi[0], psi[-1] = 0, 0
 
+    print("WIDTH OF PSI:", len(psi))
+    print("WIDTH OF STATES", len(states[0]))
+
+    # handling for the inf values in the infinite square well, or similar:
+    for j in range(len(psi)):
+        if numpy.isnan(V[j]) or numpy.isinf(V[j]):
+            psi[j] = 0
+    # for j in range(len(states[0])):
+    #     if numpy.isinf(V[j]) or numpy.isnan(V[j]):
+    #         for k in range(num_states):
+    #             states[k][j] = 0
+
     psi = normalise(psi, dx)
 
     previous_energy = energy(psi, V, dx)
@@ -93,6 +124,11 @@ def nth_state(start: float, stop: float, dimension: int, num_iterations: int, pr
     for i in range(num_iterations):
         # rand_x = random.randrange(1, dimension - 1)
         rand_x = random.randrange(1, row_size - 1)
+
+        # handling for inf values from V:
+        if numpy.isnan(V[rand_x]) or numpy.isinf(V[rand_x]):
+            continue
+
         rand_y = random.random() * 0.1 * (num_iterations - i) / num_iterations
 
         if random.random() > 0.5:
@@ -112,11 +148,23 @@ def nth_state(start: float, stop: float, dimension: int, num_iterations: int, pr
     t2 = time.time()
     print("The time for the " + str(n) + "th iteration is:", t2 - t1, "s.\n")
 
+    # Correction of artifacts at edge:
+    for j in range(n + 1):
+        psi[j] = 0
+    psi = normalise(psi, dx)
+
     plt.plot(x, psi)
     plt.title("The {}th State for the Finite Square Well:".format(n))
     plt.ylabel("$\psi$")
     plt.xlabel("x")
     plt.show()
+
+    # plt.plot(psi)
+    # plt.title("PSI BEFORE CHANGE: @" + str(n) + ":")
+    # plt.show()
+    # plt.plot(psi)
+    # plt.title("PSI AFTER CHANGE: @" + str(n))
+    # plt.show()
 
     return psi
 
