@@ -70,9 +70,7 @@ def nth_state(start: float, stop: float, dimension: int, num_iterations: int, pr
 
     t1 = time.time()
     states = gen_orthonormal_states(previous_states, dimension)
-    print(states)
     row_size = states.shape[0]
-    num_states = len(states)
 
     random.seed("THE-VARIATIONAL-PRINCIPLE")
 
