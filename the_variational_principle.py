@@ -60,25 +60,12 @@ def gen_orthonormal_states(pre_existing_states: numpy.ndarray, size):
         return numpy.identity(size)
     else:
         orthonormal_states = linalg.null_space(pre_existing_states)
-        # print(len(pre_existing_states), "# PRE EXISTING STATES!")
-        # plt.plot(orthonormal_states)
-        # plt.title("BEFORE CHANGE? " + str(len(pre_existing_states)))
-        # plt.show()
-        # print("ORTHONORMAL STATES FOR:", len(pre_existing_states), "STATES:")
-        # print(orthonormal_states)
-        # print()
         n = len(pre_existing_states)
         for j in range(n):
             for k in range(len(orthonormal_states[n])):
-                # print("(", j, ",", k, ") =", orthonormal_states[j, k])
                 orthonormal_states[j][k] = 0
 
-        # plt.plot(orthonormal_states)
-        # plt.title("AFTER CHANGE? " + str(len(pre_existing_states)))
-        # plt.show()
-
         return orthonormal_states.transpose()
-        # return orthonormal_states
 
 
 def nth_state(start: float, stop: float, dimension: int, num_iterations: int, previous_states: numpy.ndarray):
