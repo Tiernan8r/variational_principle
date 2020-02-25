@@ -33,6 +33,7 @@ def generate_derivative_matrix(dimensions: int, dx):
 
 def energy(psi: numpy.ndarray, V: numpy.ndarray, dx: float):
     Vp = V * psi
+    # A is the 2nd derivative matrix.
     Tp = factor * (A @ psi)
     return numpy.nansum(psi * (Tp + Vp)) * dx
 
@@ -40,8 +41,8 @@ def energy(psi: numpy.ndarray, V: numpy.ndarray, dx: float):
 def potential(x: numpy.ndarray):
     length = len(x)
     third = length // 3
-    # mid, bef = numpy.zeros(third + 1), numpy.linspace(numpy.inf, numpy.inf, third)
-    mid, bef = numpy.zeros(third + 1), numpy.linspace(10, 10, third)
+    mid, bef = numpy.zeros(third + 1), numpy.linspace(numpy.inf, numpy.inf, third)
+    # mid, bef = numpy.zeros(third + 1), numpy.linspace(10, 10, third)
     aft = bef.copy()
     return numpy.concatenate((bef, mid, aft))
 
@@ -84,7 +85,7 @@ def nth_state(start: float, stop: float, dimension: int, num_iterations: int, pr
 
     # handling for the inf values in the infinite square well, or similar:
     for j in range(len(psi)):
-        if numpy.isnan(V[j]) or numpy.isinf(V[j]):
+        if not numpy.isfinite(V[j]):
             psi[j] = 0
 
     psi = normalise(psi, dx)
@@ -96,7 +97,7 @@ def nth_state(start: float, stop: float, dimension: int, num_iterations: int, pr
         rand_x = random.randrange(1, row_size - 1)
 
         # handling for inf values from V:
-        if numpy.isnan(V[rand_x]) or numpy.isinf(V[rand_x]):
+        if not numpy.isfinite(V[rand_x]):
             continue
 
         rand_y = random.random() * 0.1 * (num_iterations - i) / num_iterations
@@ -155,6 +156,5 @@ def main():
     plt.ylabel("$\psi$")
     plt.legend(("Ground State", "Second State", "Third State", "Fourth State", "..."))
     plt.show()
-
 
 main()
