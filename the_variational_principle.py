@@ -6,8 +6,8 @@ import numpy
 import scipy.linalg as linalg
 
 # global constants:
-hbar = 6.582119569 * 10 ** -16  # 6.582119569x10^16 (from wikipedia)
-m = 9.1093837015 * 10 ** -31  # 9.1093837015(28)x10^31
+hbar = 6.582119569 * 10 ** -16  # 6.582119569x10^-16 (from wikipedia)
+m = 9.1093837015 * 10 ** -31  # 9.1093837015(28)x10^-31
 factor = -(hbar ** 2) / (2 * m)
 
 
