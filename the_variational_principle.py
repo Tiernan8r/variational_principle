@@ -79,7 +79,6 @@ def nth_state(start: float, stop: float, dimension: int, num_iterations: int, pr
     print(states)
     row_size = states.shape[0]
     num_states = len(states)
-    print(num_states, "pre-existing states.")
 
     random.seed("THE-VARIATIONAL-PRINCIPLE")
 
@@ -91,17 +90,10 @@ def nth_state(start: float, stop: float, dimension: int, num_iterations: int, pr
     psi = numpy.ones(dimension)
     psi[0], psi[-1] = 0, 0
 
-    print("WIDTH OF PSI:", len(psi))
-    print("WIDTH OF STATES", len(states[0]))
-
     # handling for the inf values in the infinite square well, or similar:
     for j in range(len(psi)):
         if numpy.isnan(V[j]) or numpy.isinf(V[j]):
             psi[j] = 0
-    # for j in range(len(states[0])):
-    #     if numpy.isinf(V[j]) or numpy.isnan(V[j]):
-    #         for k in range(num_states):
-    #             states[k][j] = 0
 
     psi = normalise(psi, dx)
 
@@ -109,7 +101,6 @@ def nth_state(start: float, stop: float, dimension: int, num_iterations: int, pr
     print("Initial Energy:", previous_energy)
 
     for i in range(num_iterations):
-        # rand_x = random.randrange(1, dimension - 1)
         rand_x = random.randrange(1, row_size - 1)
 
         # handling for inf values from V:
@@ -146,20 +137,12 @@ def nth_state(start: float, stop: float, dimension: int, num_iterations: int, pr
     plt.xlabel("x")
     plt.show()
 
-    # plt.plot(psi)
-    # plt.title("PSI BEFORE CHANGE: @" + str(n) + ":")
-    # plt.show()
-    # plt.plot(psi)
-    # plt.title("PSI AFTER CHANGE: @" + str(n))
-    # plt.show()
-
     return psi
 
 
 def main():
     a, b, N, num_iterations = -10, 10, 100, 10 ** 5
     x = numpy.linspace(a, b, N)
-    # V = potential(x)
 
     dx = (b - a) / N
     generate_derivative_matrix(N, dx)
@@ -167,7 +150,6 @@ def main():
     number_states = 5
     for i in range(number_states):
         psi = nth_state(a, b, N, num_iterations, existing_states)
-        # existing_states += [psi]
         if existing_states.size == 0:
             existing_states = numpy.array([psi])
         else:
