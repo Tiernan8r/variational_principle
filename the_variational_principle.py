@@ -31,15 +31,8 @@ def generate_derivative_matrix(dimensions: int, dx):
     return A * (dx ** -2)
 
 
-# def second_derivative(f):
-#     global A
-#     # return numpy.dot(A, f)
-#     return A @ f
-
-
 def energy(psi: numpy.ndarray, V: numpy.ndarray, dx: float):
     Vp = V * psi
-    # Tp = factor * second_derivative(psi)
     Tp = factor * (A @ psi)
     return numpy.nansum(psi * (Tp + Vp)) * dx
 
