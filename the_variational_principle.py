@@ -153,18 +153,7 @@ def main():
     plt.title("Wavefunctions $\psi$ for the Finite Square Well:")
     plt.xlabel("x")
     plt.ylabel("$\psi$")
-    # # plt.legend(("Original $\psi$", "potential", "Normalised $\psi$", "Final $\psi$"))
-    # plt.legend(("Potential", "Ground State", "Second State", "Third State", "Fourth State", "..."))
     plt.legend(("Ground State", "Second State", "Third State", "Fourth State", "..."))
-    # # plt.legend(("Ground State", "Analytical Solution"))
-    plt.show()
-
-    ground_psi = existing_states[0]
-    orthonormal_states = gen_orthonormal_states(existing_states, N)
-    for j in range(len(orthonormal_states)):
-        if abs(orthonormal_states[j][j]) > 0.01:
-            plt.plot(x, orthonormal_states[j])
-    plt.title("Error in Orthonormal States:")
     plt.show()
 
 
