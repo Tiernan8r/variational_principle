@@ -2,8 +2,8 @@ import random
 import time
 
 import matplotlib.pyplot as plt
-import numpy
-import scipy.linalg as linalg
+import numpy as np
+import scipy.linalg as la
 
 # global constants:
 hbar = 6.582119569 * 10 ** -16  # 6.582119569x10^-16 (from wikipedia)
@@ -11,10 +11,10 @@ m = 9.1093837015 * 10 ** -31  # 9.1093837015(28)x10^-31
 factor = -(hbar ** 2) / (2 * m)
 
 
-def normalise(psi: numpy.ndarray, dx: float):
+def normalise(psi: np.ndarray, dx: float):
     # integrate using the rectangular rule
-    norm = numpy.sum(psi * psi) * dx
-    norm_psi = psi / numpy.sqrt(norm)
+    norm = np.sum(psi * psi) * dx
+    norm_psi = psi / np.sqrt(norm)
     return norm_psi
 
 
@@ -23,38 +23,39 @@ global A
 
 def generate_derivative_matrix(dimensions: int, dx):
     global A
-    A = numpy.zeros((dimensions, dimensions))
+    A = np.zeros((dimensions, dimensions))
     for i in range(1, dimensions - 1):
         A[i][i - 1], A[i][i], A[i][i + 1] = 1, -2, 1
     A[0][0], A[0][1], A[-1][-1], A[0][2], A[-1][-2], A[-1][-3] = 1, -2, 1, 1, -2, 1
     return A * (dx ** -2)
 
 
-def energy(psi: numpy.ndarray, V: numpy.ndarray, dx: float):
+def energy(psi: np.ndarray, V: np.ndarray, dx: float):
     Vp = V * psi
     # A is the 2nd derivative matrix.
     Tp = factor * (A @ psi)
-    return numpy.nansum(psi * (Tp + Vp)) * dx
+    return np.nansum(psi * (Tp + Vp)) * dx
 
 
-def potential(x: numpy.ndarray):
+def potential(x: np.ndarray):
     length = len(x)
     third = length // 3
-    mid, bef = numpy.zeros(third + 1), numpy.linspace(numpy.inf, numpy.inf, third)
+    mid, bef = np.zeros(third + 1), np.linspace(np.inf, np.inf, third)
     # mid, bef = numpy.zeros(third + 1), numpy.linspace(10, 10, third)
     aft = bef.copy()
-    return numpy.concatenate((bef, mid, aft))
+    return np.concatenate((bef, mid, aft))
 
     # return 0.5 * x ** 2
 
 
-def gen_orthonormal_states(pre_existing_states: numpy.ndarray, size):
+def gen_orthonormal_states(pre_existing_states: np.ndarray, size):
     # there are no known states already
     if pre_existing_states.size == 0:
-        return numpy.identity(size)
+        return np.identity(size)
     else:
-        orthonormal_states = linalg.null_space(pre_existing_states)
+        orthonormal_states = la.null_space(pre_existing_states)
         n = len(pre_existing_states)
+        # artifacts fix
         for j in range(n):
             for k in range(len(orthonormal_states[n])):
                 orthonormal_states[j][k] = 0
@@ -62,7 +63,7 @@ def gen_orthonormal_states(pre_existing_states: numpy.ndarray, size):
         return orthonormal_states.transpose()
 
 
-def nth_state(start: float, stop: float, dimension: int, num_iterations: int, previous_states: numpy.ndarray):
+def nth_state(start: float, stop: float, dimension: int, num_iterations: int, previous_states: np.ndarray):
     # the iteration number
     n = 0
     if previous_states.size != 0:
@@ -76,15 +77,15 @@ def nth_state(start: float, stop: float, dimension: int, num_iterations: int, pr
 
     dx = (stop - start) / dimension
 
-    x = numpy.linspace(start, stop, dimension)
+    x = np.linspace(start, stop, dimension)
     V = potential(x)
 
-    psi = numpy.ones(dimension)
+    psi = np.ones(dimension)
     psi[0], psi[-1] = 0, 0
 
     # handling for the inf values in the infinite square well, or similar:
     for j in range(len(psi)):
-        if not numpy.isfinite(V[j]):
+        if not np.isfinite(V[j]):
             psi[j] = 0
 
     psi = normalise(psi, dx)
@@ -130,18 +131,18 @@ def nth_state(start: float, stop: float, dimension: int, num_iterations: int, pr
 
 def main():
     a, b, N, num_iterations = -10, 10, 100, 10 ** 5
-    x = numpy.linspace(a, b, N)
+    x = np.linspace(a, b, N)
 
     dx = (b - a) / N
     generate_derivative_matrix(N, dx)
-    existing_states = numpy.array([])
+    existing_states = np.array([])
     number_states = 5
     for i in range(number_states):
         psi = nth_state(a, b, N, num_iterations, existing_states)
         if existing_states.size == 0:
-            existing_states = numpy.array([psi])
+            existing_states = np.array([psi])
         else:
-            existing_states = numpy.vstack((existing_states, psi))
+            existing_states = np.vstack((existing_states, psi))
 
     for j in range(existing_states.shape[0]):
         plt.plot(x, existing_states[j])
@@ -151,5 +152,6 @@ def main():
     plt.ylabel("$\psi$")
     plt.legend(("Ground State", "Second State", "Third State", "Fourth State", "..."))
     plt.show()
+
 
 main()
