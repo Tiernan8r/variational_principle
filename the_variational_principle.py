@@ -32,9 +32,11 @@ def generate_derivative_matrix(dimensions: int, dx):
 
 def energy(psi: np.ndarray, V: np.ndarray, dx: float):
     Vp = V * psi
+    # filter out nan values in Vp
+    Vp = np.where(np.isfinite(Vp), Vp, 0)
     # A is the 2nd derivative matrix.
     Tp = factor * (A @ psi)
-    return np.nansum(psi * (Tp + Vp)) * dx
+    return np.sum(psi * (Tp + Vp)) * dx
 
 
 def potential(x: np.ndarray):
