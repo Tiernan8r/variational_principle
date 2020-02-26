@@ -26,8 +26,7 @@ def generate_derivative_matrix(dimensions: int, dx):
     A = numpy.zeros((dimensions, dimensions))
     for i in range(1, dimensions - 1):
         A[i][i - 1], A[i][i], A[i][i + 1] = 1, -2, 1
-    A[0][0], A[-1][-1], A[0][2], A[-1][-3] = 1, 1, 1, 1
-    A[0][1], A[-1][-2] = -2, -2
+    A[0][0], A[0][1], A[-1][-1], A[0][2], A[-1][-2], A[-1][-3] = 1, -2, 1, 1, -2, 1
     return A * (dx ** -2)
 
 
@@ -70,8 +69,8 @@ def nth_state(start: float, stop: float, dimension: int, num_iterations: int, pr
         n = previous_states.shape[0]
 
     t1 = time.time()
-    states = gen_orthonormal_states(previous_states, dimension)
-    row_size = states.shape[0]
+    orthonormal_states = gen_orthonormal_states(previous_states, dimension)
+    row_size = orthonormal_states.shape[0]
 
     random.seed("THE-VARIATIONAL-PRINCIPLE")
 
@@ -105,14 +104,14 @@ def nth_state(start: float, stop: float, dimension: int, num_iterations: int, pr
         if random.random() > 0.5:
             rand_y *= -1
 
-        psi += states[rand_x] * rand_y
+        psi += orthonormal_states[rand_x] * rand_y
         psi = normalise(psi, dx)
 
         new_energy = energy(psi, V, dx)
         if new_energy < previous_energy:
             previous_energy = new_energy
         else:
-            psi -= states[rand_x] * rand_y
+            psi -= orthonormal_states[rand_x] * rand_y
             psi = normalise(psi, dx)
 
     print("Final Energy:", energy(psi, V, dx))
