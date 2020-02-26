@@ -72,6 +72,18 @@ def nth_state(start: float, stop: float, dimension: int, num_iterations: int, pr
         n = previous_states.shape[0]
 
     t1 = time.time()
+    # TODO error in inf occurs because null_space returned is wrong?
+    #  occurs because 1st state == 0th state => orthonormals goosed.
+    #  therefore: make 1 good -> all good?
+
+    print("PRE EXISTIN STATES: #", len(previous_states))
+    # print(previous_states)
+    for j in range(len(previous_states)):
+        plt.plot(previous_states[j])
+    # plt.plot(previous_states)
+    plt.title("USING TO GEN ORTHO NORMAL STATES: #" + str(n))
+    plt.show()
+
     orthonormal_states = gen_orthonormal_states(previous_states, dimension)
     row_size = orthonormal_states.shape[0]
 
