@@ -89,8 +89,8 @@ def nth_state(start: float, stop: float, dimension: int, num_iterations: int, pr
 
     psi = normalise(psi, dx)
 
-    previous_energy = energy(psi, V, dx)
-    print("Initial Energy:", previous_energy)
+    prev_E = energy(psi, V, dx)
+    print("Initial Energy:", prev_E)
 
     for i in range(num_iterations):
         rand_x = random.randrange(1, row_size - 1)
@@ -107,9 +107,9 @@ def nth_state(start: float, stop: float, dimension: int, num_iterations: int, pr
         psi += orthonormal_states[rand_x] * rand_y
         psi = normalise(psi, dx)
 
-        new_energy = energy(psi, V, dx)
-        if new_energy < previous_energy:
-            previous_energy = new_energy
+        new_E = energy(psi, V, dx)
+        if new_E < prev_E:
+            prev_E = new_E
         else:
             psi -= orthonormal_states[rand_x] * rand_y
             psi = normalise(psi, dx)
