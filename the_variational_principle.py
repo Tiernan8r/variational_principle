@@ -95,10 +95,6 @@ def nth_state(start: float, stop: float, dimension: int, num_iterations: int, pr
     for i in range(num_iterations):
         rand_x = random.randrange(1, row_size - 1)
 
-        # handling for inf values from V:
-        if not numpy.isfinite(V[rand_x]):
-            continue
-
         rand_y = random.random() * 0.1 * (num_iterations - i) / num_iterations
 
         if random.random() > 0.5:
