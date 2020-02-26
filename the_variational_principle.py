@@ -90,6 +90,21 @@ def nth_state(start: float, stop: float, dimension: int, num_iterations: int, pr
         if not np.isfinite(V[j]):
             psi[j] = 0
 
+    plt.plot(orthonormal_states)
+    plt.title("STATES BEFORE V CHECK: " + str(n))
+    plt.show()
+
+    # infinite fix
+    for k in range(len(psi)):
+        if not np.isfinite(V[k]):
+            for j in range(len(orthonormal_states)):
+                orthonormal_states[j, k] = 0
+    # TODO ^^^ does orthonormal_states have to be re-normalised after change?
+
+    plt.plot(orthonormal_states)
+    plt.title("STATES AFTER V CHECK: " + str(n))
+    plt.show()
+
     psi = normalise(psi, dx)
 
     prev_E = energy(psi, V, dx)
@@ -137,10 +152,17 @@ def main():
 
     dx = (b - a) / N
     generate_derivative_matrix(N, dx)
-    existing_states = np.array([])
+    existing_states = np.array([np.zeros(N)])
     number_states = 5
     for i in range(number_states):
+        # print(existing_states)
+        for j in range(len(existing_states)):
+            plt.plot(existing_states[j])
+        # plt.plot(existing_states)
+        plt.title("EXISTING STATES")
+        plt.show()
         psi = nth_state(a, b, N, num_iterations, existing_states)
+
         if existing_states.size == 0:
             existing_states = np.array([psi])
         else:
