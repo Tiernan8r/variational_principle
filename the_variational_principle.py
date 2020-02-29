@@ -25,8 +25,7 @@ def generate_derivative_matrix(dimensions: int, dx):
     global A
     A = np.zeros((dimensions, dimensions))
     for i in range(1, dimensions - 1):
-        A[i][i - 1], A[i][i], A[i][i + 1] = 1, -2, 1
-
+        A[i, i - 1], A[i, i], A[i, i + 1] = 1, -2, 1
     A[0, 0], A[0, 1], A[0][2], A[-1, -1], A[-1, -2], A[-1, -3] = 1, -2, 1, 1, -2, 1
     return A * (dx ** -2)
 
@@ -41,7 +40,7 @@ def energy(psi: np.ndarray, V: np.ndarray, dx: float):
     return np.sum(psi * (Tp + Vp)) * dx
 
 
-def potential(x: numpy.ndarray):
+def potential(x: np.ndarray):
     # length = len(x)
     # third = length // 3
     # # mid, bef = numpy.zeros(third + 1), numpy.linspace(numpy.inf, numpy.inf, third)
