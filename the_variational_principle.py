@@ -31,6 +31,7 @@ def generate_derivative_matrix(dimensions: int, dx):
 
 
 def energy(psi: np.ndarray, V: np.ndarray, dx: float):
+    # when V is inf, wil get an invalid value error at runtime, not an issue, is sorted in filtering below:
     Vp = V * psi
     # filter out nan values in Vp
     Vp = np.where(np.isfinite(Vp), Vp, 0)
@@ -42,8 +43,8 @@ def energy(psi: np.ndarray, V: np.ndarray, dx: float):
 def potential(x: np.ndarray):
     length = len(x)
     third = length // 3
-    mid, bef = np.zeros(third + 1), np.linspace(np.inf, np.inf, third)
-    # mid, bef = numpy.zeros(third + 1), numpy.linspace(10, 10, third)
+    # mid, bef = np.zeros(third + 1), np.linspace(np.inf, np.inf, third)
+    mid, bef = np.zeros(third + 1), np.linspace(10, 10, third)
     aft = bef.copy()
     return np.concatenate((bef, mid, aft))
 
@@ -67,7 +68,8 @@ def gen_orthonormal_states(pre_existing_states: np.ndarray, size, fix_artifacts=
         return orthonormal_states.transpose()
 
 
-def nth_state(start: float, stop: float, dimension: int, num_iterations: int, previous_states: np.ndarray):
+def nth_state(start: float, stop: float, dimension: int, num_iterations: int, previous_states: np.ndarray,
+              fix_infinites=True):
     # the iteration number
     n = 0
     if previous_states.size != 0:
@@ -77,14 +79,6 @@ def nth_state(start: float, stop: float, dimension: int, num_iterations: int, pr
     # TODO error in inf occurs because null_space returned is wrong?
     #  occurs because 1st state == 0th state => orthonormals goosed.
     #  therefore: make 1 good -> all good?
-
-    print("PRE EXISTIN STATES: #", len(previous_states))
-    # print(previous_states)
-    for j in range(len(previous_states)):
-        plt.plot(previous_states[j])
-    # plt.plot(previous_states)
-    plt.title("USING TO GEN ORTHO NORMAL STATES: #" + str(n))
-    plt.show()
 
     orthonormal_states = gen_orthonormal_states(previous_states, dimension)
     row_size = orthonormal_states.shape[0]
@@ -99,25 +93,18 @@ def nth_state(start: float, stop: float, dimension: int, num_iterations: int, pr
     psi = np.ones(dimension)
     psi[0], psi[-1] = 0, 0
 
-    # handling for the inf values in the infinite square well, or similar:
-    for j in range(len(psi)):
-        if not np.isfinite(V[j]):
-            psi[j] = 0
+    if fix_infinites:
+        # handling for the inf values in the infinite square well, or similar:
+        for j in range(len(psi)):
+            if not np.isfinite(V[j]):
+                psi[j] = 0
 
-    plt.plot(orthonormal_states)
-    plt.title("STATES BEFORE V CHECK: " + str(n))
-    plt.show()
-
-    # infinite fix
-    for k in range(len(psi)):
-        if not np.isfinite(V[k]):
-            for j in range(len(orthonormal_states)):
-                orthonormal_states[j, k] = 0
-    # TODO ^^^ does orthonormal_states have to be re-normalised after change?
-
-    plt.plot(orthonormal_states)
-    plt.title("STATES AFTER V CHECK: " + str(n))
-    plt.show()
+        # infinite fix
+        for k in range(len(psi)):
+            if not np.isfinite(V[k]):
+                for j in range(len(orthonormal_states)):
+                    orthonormal_states[j, k] = 0
+        # TODO ^^^ does orthonormal_states have to be re-normalised after change? ... no?
 
     psi = normalise(psi, dx)
 
@@ -152,7 +139,7 @@ def nth_state(start: float, stop: float, dimension: int, num_iterations: int, pr
     psi = normalise(psi, dx)
 
     plt.plot(x, psi)
-    plt.title("The {}th State for the Finite Square Well:".format(n))
+    plt.title("The {}th State for the Infinite Square Well:".format(n))
     plt.ylabel("$\psi$")
     plt.xlabel("x")
     plt.show()
@@ -169,12 +156,6 @@ def main():
     existing_states = np.array([np.zeros(N)])
     number_states = 5
     for i in range(number_states):
-        # print(existing_states)
-        for j in range(len(existing_states)):
-            plt.plot(existing_states[j])
-        # plt.plot(existing_states)
-        plt.title("EXISTING STATES")
-        plt.show()
         psi = nth_state(a, b, N, num_iterations, existing_states)
 
         if existing_states.size == 0:
