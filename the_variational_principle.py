@@ -2,19 +2,19 @@ import random
 import time
 
 import matplotlib.pyplot as plt
-import numpy
-import scipy.linalg as linalg
+import numpy as np
+import scipy.linalg as la
 
 # global constants:
-hbar = 6.582119569 * 10 ** -16  # 6.582119569x10^16 (from wikipedia)
-m = 9.1093837015 * 10 ** -31  # 9.1093837015(28)x10^31
+hbar = 6.582119569 * 10 ** -16  # 6.582119569x10^-16 (from wikipedia)
+m = 9.1093837015 * 10 ** -31  # 9.1093837015(28)x10^-31
 factor = -(hbar ** 2) / (2 * m)
 
 
-def normalise(psi: numpy.ndarray, dx: float):
+def normalise(psi: np.ndarray, dx: float):
     # integrate using the rectangular rule
-    norm = numpy.sum(psi * psi) * dx
-    norm_psi = psi / numpy.sqrt(norm)
+    norm = np.sum(psi * psi) * dx
+    norm_psi = psi / np.sqrt(norm)
     return norm_psi
 
 
@@ -23,17 +23,22 @@ global A
 
 def generate_derivative_matrix(dimensions: int, dx):
     global A
-    A = numpy.zeros((dimensions, dimensions))
+    A = np.zeros((dimensions, dimensions))
     for i in range(1, dimensions - 1):
         A[i][i - 1], A[i][i], A[i][i + 1] = 1, -2, 1
+
     A[0, 0], A[0, 1], A[0][2], A[-1, -1], A[-1, -2], A[-1, -3] = 1, -2, 1, 1, -2, 1
     return A * (dx ** -2)
 
 
-def energy(psi: numpy.ndarray, V: numpy.ndarray, dx: float):
+def energy(psi: np.ndarray, V: np.ndarray, dx: float):
+    # when V is inf, wil get an invalid value error at runtime, not an issue, is sorted in filtering below:
     Vp = V * psi
+    # filter out nan values in Vp
+    Vp = np.where(np.isfinite(Vp), Vp, 0)
+    # A is the 2nd derivative matrix.
     Tp = factor * (A @ psi)
-    return numpy.nansum(psi * (Tp + Vp)) * dx
+    return np.sum(psi * (Tp + Vp)) * dx
 
 
 def potential(x: numpy.ndarray):
@@ -47,70 +52,82 @@ def potential(x: numpy.ndarray):
     return 0.5 * x ** 2
 
 
-def gen_orthonormal_states(pre_existing_states: numpy.ndarray, size):
+def gen_orthonormal_states(pre_existing_states: np.ndarray, size, fix_artifacts=True):
     # there are no known states already
     if pre_existing_states.size == 0:
-        return numpy.identity(size)
+        return np.identity(size)
     else:
-        orthonormal_states = linalg.null_space(pre_existing_states)
+        orthonormal_states = la.null_space(pre_existing_states)
         n = len(pre_existing_states)
-        for j in range(n):
-            for k in range(len(orthonormal_states[n])):
-                orthonormal_states[j][k] = 0
+
+        # artifacts fix
+        if fix_artifacts:
+            for j in range(n):
+                for k in range(len(orthonormal_states[n])):
+                    orthonormal_states[j][k] = 0
 
         return orthonormal_states.transpose()
 
 
-def nth_state(start: float, stop: float, dimension: int, num_iterations: int, previous_states: numpy.ndarray):
+def nth_state(start: float, stop: float, dimension: int, num_iterations: int, previous_states: np.ndarray,
+              fix_infinites=True):
     # the iteration number
     n = 0
     if previous_states.size != 0:
         n = previous_states.shape[0]
 
     t1 = time.time()
-    states = gen_orthonormal_states(previous_states, dimension)
-    row_size = states.shape[0]
+    # TODO error in inf occurs because null_space returned is wrong?
+    #  occurs because 1st state == 0th state => orthonormals goosed.
+    #  therefore: make 1 good -> all good?
+
+    orthonormal_states = gen_orthonormal_states(previous_states, dimension)
+    row_size = orthonormal_states.shape[0]
 
     random.seed("THE-VARIATIONAL-PRINCIPLE")
 
     dx = (stop - start) / dimension
 
-    x = numpy.linspace(start, stop, dimension)
+    x = np.linspace(start, stop, dimension)
     V = potential(x)
 
-    psi = numpy.ones(dimension)
+    psi = np.ones(dimension)
     psi[0], psi[-1] = 0, 0
 
-    # handling for the inf values in the infinite square well, or similar:
-    for j in range(len(psi)):
-        if numpy.isnan(V[j]) or numpy.isinf(V[j]):
-            psi[j] = 0
+    if fix_infinites:
+        # handling for the inf values in the infinite square well, or similar:
+        for j in range(len(psi)):
+            if not np.isfinite(V[j]):
+                psi[j] = 0
+
+        # infinite fix
+        for k in range(len(psi)):
+            if not np.isfinite(V[k]):
+                for j in range(len(orthonormal_states)):
+                    orthonormal_states[j, k] = 0
+        # TODO ^^^ does orthonormal_states have to be re-normalised after change? ... no?
 
     psi = normalise(psi, dx)
 
-    previous_energy = energy(psi, V, dx)
-    print("Initial Energy:", previous_energy)
+    prev_E = energy(psi, V, dx)
+    print("Initial Energy:", prev_E)
 
     for i in range(num_iterations):
         rand_x = random.randrange(1, row_size - 1)
-
-        # handling for inf values from V:
-        if numpy.isnan(V[rand_x]) or numpy.isinf(V[rand_x]):
-            continue
 
         rand_y = random.random() * 0.1 * (num_iterations - i) / num_iterations
 
         if random.random() > 0.5:
             rand_y *= -1
 
-        psi += states[rand_x] * rand_y
+        psi += orthonormal_states[rand_x] * rand_y
         psi = normalise(psi, dx)
 
-        new_energy = energy(psi, V, dx)
-        if new_energy < previous_energy:
-            previous_energy = new_energy
+        new_E = energy(psi, V, dx)
+        if new_E < prev_E:
+            prev_E = new_E
         else:
-            psi -= states[rand_x] * rand_y
+            psi -= orthonormal_states[rand_x] * rand_y
             psi = normalise(psi, dx)
 
     print("Final Energy:", energy(psi, V, dx))
@@ -123,7 +140,7 @@ def nth_state(start: float, stop: float, dimension: int, num_iterations: int, pr
     psi = normalise(psi, dx)
 
     plt.plot(x, psi)
-    plt.title("The {}th State for the Finite Square Well:".format(n))
+    plt.title("The {}th State for the Infinite Square Well:".format(n))
     plt.ylabel("$\psi$")
     plt.xlabel("x")
     plt.show()
@@ -133,18 +150,19 @@ def nth_state(start: float, stop: float, dimension: int, num_iterations: int, pr
 
 def main():
     a, b, N, num_iterations = -10, 10, 100, 10 ** 5
-    x = numpy.linspace(a, b, N)
+    x = np.linspace(a, b, N)
 
     dx = (b - a) / N
     generate_derivative_matrix(N, dx)
-    existing_states = numpy.array([])
+    existing_states = np.array([np.zeros(N)])
     number_states = 5
     for i in range(number_states):
         psi = nth_state(a, b, N, num_iterations, existing_states)
+
         if existing_states.size == 0:
-            existing_states = numpy.array([psi])
+            existing_states = np.array([psi])
         else:
-            existing_states = numpy.vstack((existing_states, psi))
+            existing_states = np.vstack((existing_states, psi))
 
     for j in range(existing_states.shape[0]):
         plt.plot(x, existing_states[j])
@@ -152,17 +170,7 @@ def main():
     plt.title("Wavefunctions $\psi$ for the Finite Square Well:")
     plt.xlabel("x")
     plt.ylabel("$\psi$")
-    # # plt.legend(("Original $\psi$", "potential", "Normalised $\psi$", "Final $\psi$"))
-    # plt.legend(("Potential", "Ground State", "Second State", "Third State", "Fourth State", "..."))
     plt.legend(("Ground State", "Second State", "Third State", "Fourth State", "..."))
-    # # plt.legend(("Ground State", "Analytical Solution"))
-    plt.show()
-
-    orthonormal_states = gen_orthonormal_states(existing_states, N)
-    for j in range(len(orthonormal_states)):
-        if abs(orthonormal_states[j][j]) > 0.01:
-            plt.plot(x, orthonormal_states[j])
-    plt.title("Error in Orthonormal States:")
     plt.show()
 
 
