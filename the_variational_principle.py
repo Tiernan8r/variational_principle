@@ -26,6 +26,7 @@ def generate_derivative_matrix(axis_length: int, dr: float):
     A = np.zeros((axis_length, axis_length))
     for i in range(1, axis_length - 1):
         A[i, i - 1], A[i, i], A[i, i + 1] = 1, -2, 1
+    # forward & backward difference at the edges
     A[0, 0], A[0, 1], A[0, 2], A[-1, -1], A[-1, -2], A[-1, -3] = 1, -2, 1, 1, -2, 1
     return A * (dr ** -2)
 
@@ -119,7 +120,6 @@ def nth_state(start: float, stop: float, num_axes: int, axis_length: int, num_it
                 if not np.isfinite(V[ax, k]):
                     for j in range(len(orthonormal_states)):
                         orthonormal_states[ax, j, k] = 0
-            # TODO ^^^ does orthonormal_states have to be re-normalised after change? ... no?
 
     psi = normalise(psi, dr)
 
