@@ -50,17 +50,19 @@ def potential(x: np.ndarray):
     # return 0.5 * x ** 2
 
 
-def gen_orthonormal_states(pre_existing_states: np.ndarray, size):
+def gen_orthonormal_states(pre_existing_states: np.ndarray, size, fix_artifacts=True):
     # there are no known states already
     if pre_existing_states.size == 0:
         return np.identity(size)
     else:
         orthonormal_states = la.null_space(pre_existing_states)
         n = len(pre_existing_states)
+
         # artifacts fix
-        for j in range(n):
-            for k in range(len(orthonormal_states[n])):
-                orthonormal_states[j][k] = 0
+        if fix_artifacts:
+            for j in range(n):
+                for k in range(len(orthonormal_states[n])):
+                    orthonormal_states[j][k] = 0
 
         return orthonormal_states.transpose()
 
