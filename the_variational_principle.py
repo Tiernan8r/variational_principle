@@ -21,13 +21,20 @@ def normalise(psi: np.ndarray, dx: float):
 global A
 
 
-def generate_derivative_matrix(dimensions: int, dx):
+# def generate_derivative_matrix(num_axes: int, axis_length: int, dr: float):
+def generate_derivative_matrix(axis_length: int, dr: float):
     global A
-    A = np.zeros((dimensions, dimensions))
-    for i in range(1, dimensions - 1):
+    # A = np.zeros((num_axes, axis_length, axis_length))
+    # for ax in range(num_axes):
+    #     for i in range(1, axis_length - 1):
+    #         A[ax, i, i - 1], A[ax, i, i], A[ax, i, i + 1] = 1, -2, 1
+    #     A[ax, 0, 0], A[ax, 0, 1], A[ax, 0, 2], A[ax, -1, -1], A[ax, -1, -2], A[ax, -1, -3] = 1, -2, 1, 1, -2, 1
+    #
+    A = np.zeros((axis_length, axis_length))
+    for i in range(1, axis_length - 1):
         A[i, i - 1], A[i, i], A[i, i + 1] = 1, -2, 1
-    A[0, 0], A[0, 1], A[0][2], A[-1, -1], A[-1, -2], A[-1, -3] = 1, -2, 1, 1, -2, 1
-    return A * (dx ** -2)
+    A[0, 0], A[0, 1], A[0, 2], A[-1, -1], A[-1, -2], A[-1, -3] = 1, -2, 1, 1, -2, 1
+    return A * (dr ** -2)
 
 
 def energy(psi: np.ndarray, V: np.ndarray, dx: float):
