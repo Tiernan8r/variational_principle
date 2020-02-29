@@ -153,7 +153,7 @@ def nth_state(start: float, stop: float, num_axes: int, axis_length: int, num_it
     # Correction of artifacts at edge:
     if fix_artifacts:
         for ax in range(num_axes):
-            for j in range(n + 1):
+            for j in range(len(previous_states)):
                 psi[ax, j] = 0
         psi = normalise(psi, dr)
 
