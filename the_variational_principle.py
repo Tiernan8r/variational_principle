@@ -81,7 +81,7 @@ def gen_orthonormal_states(pre_existing_states: np.ndarray, num_axes, axis_size,
 
 def nth_state(start: float, stop: float, num_axes: int, axis_length: int, num_iterations: int,
               previous_states: np.ndarray,
-              fix_infinities=True):
+              fix_infinities=True, fix_artifacts=True):
     n = len(previous_states) - 1
 
     t1 = time.time()
@@ -150,11 +150,12 @@ def nth_state(start: float, stop: float, num_axes: int, axis_length: int, num_it
     t2 = time.time()
     print("The time for the " + str(n) + "th iteration is:", t2 - t1, "s.\n")
 
-    # TODO: fix this error, add boolean check for correction.
-    # # Correction of artifacts at edge:
-    # for j in range(n + 1):
-    #     psi[j] = 0
-    # psi = normalise(psi, dr)
+    # Correction of artifacts at edge:
+    if fix_artifacts:
+        for ax in range(num_axes):
+            for j in range(n + 1):
+                psi[ax, j] = 0
+        psi = normalise(psi, dr)
 
     for ax in range(num_axes):
         plt.plot(r[ax], psi[ax])
