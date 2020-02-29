@@ -26,7 +26,8 @@ def generate_derivative_matrix(dimensions: int, dx):
     A = np.zeros((dimensions, dimensions))
     for i in range(1, dimensions - 1):
         A[i][i - 1], A[i][i], A[i][i + 1] = 1, -2, 1
-    A[0][0], A[0][1], A[-1][-1], A[0][2], A[-1][-2], A[-1][-3] = 1, -2, 1, 1, -2, 1
+
+    A[0, 0], A[0, 1], A[0][2], A[-1, -1], A[-1, -2], A[-1, -3] = 1, -2, 1, 1, -2, 1
     return A * (dx ** -2)
 
 
@@ -40,15 +41,15 @@ def energy(psi: np.ndarray, V: np.ndarray, dx: float):
     return np.sum(psi * (Tp + Vp)) * dx
 
 
-def potential(x: np.ndarray):
-    length = len(x)
-    third = length // 3
-    # mid, bef = np.zeros(third + 1), np.linspace(np.inf, np.inf, third)
-    mid, bef = np.zeros(third + 1), np.linspace(10, 10, third)
-    aft = bef.copy()
-    return np.concatenate((bef, mid, aft))
+def potential(x: numpy.ndarray):
+    # length = len(x)
+    # third = length // 3
+    # # mid, bef = numpy.zeros(third + 1), numpy.linspace(numpy.inf, numpy.inf, third)
+    # mid, bef = numpy.zeros(third + 1), numpy.linspace(10, 10, third)
+    # aft = bef.copy()
+    # return numpy.concatenate((bef, mid, aft))
 
-    # return 0.5 * x ** 2
+    return 0.5 * x ** 2
 
 
 def gen_orthonormal_states(pre_existing_states: np.ndarray, size, fix_artifacts=True):
