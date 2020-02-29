@@ -90,9 +90,7 @@ def nth_state(start: float, stop: float, num_axes: int, axis_length: int, num_it
     #  therefore: make 1 good -> all good?
 
     orthonormal_states = gen_orthonormal_states(previous_states, num_axes, axis_length)
-    # row_size = orthonormal_states.shape[0]
     row_size = len(orthonormal_states)
-    print("ROWSIZE:", row_size)
 
     random.seed("THE-VARIATIONAL-PRINCIPLE")
 
