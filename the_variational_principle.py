@@ -82,7 +82,7 @@ def gen_orthonormal_states(pre_existing_states: np.ndarray, num_axes, axis_size,
 def nth_state(start: float, stop: float, num_axes: int, axis_length: int, num_iterations: int,
               previous_states: np.ndarray,
               fix_infinities=True, fix_artifacts=True):
-    n = len(previous_states) - 1
+    n = (len(previous_states) // num_axes) - 1
 
     t1 = time.time()
     # TODO error in inf occurs because null_space returned is wrong?
