@@ -26,8 +26,7 @@ def generate_derivative_matrix(dimensions: int, dx):
     A = numpy.zeros((dimensions, dimensions))
     for i in range(1, dimensions - 1):
         A[i][i - 1], A[i][i], A[i][i + 1] = 1, -2, 1
-    A[0][0], A[-1][-1], A[0][2], A[-1][-3] = 1, 1, 1, 1
-    A[0][1], A[-1][-2] = -2, -2
+    A[0, 0], A[0, 1], A[0][2], A[-1, -1], A[-1, -2], A[-1, -3] = 1, -2, 1, 1, -2, 1
     return A * (dx ** -2)
 
 
