@@ -41,14 +41,14 @@ def energy(psi: np.ndarray, V: np.ndarray, dx: float):
 
 
 def potential(x: np.ndarray):
-    # length = len(x)
-    # third = length // 3
-    # # mid, bef = numpy.zeros(third + 1), numpy.linspace(numpy.inf, numpy.inf, third)
-    # mid, bef = numpy.zeros(third + 1), numpy.linspace(10, 10, third)
-    # aft = bef.copy()
-    # return numpy.concatenate((bef, mid, aft))
+    length = len(x)
+    third = length // 3
+    # mid, bef = np.zeros(third + 1), np.linspace(np.inf, np.inf, third)
+    mid, bef = np.zeros(third + 1), np.linspace(10, 10, third)
+    aft = bef.copy()
+    return np.concatenate((bef, mid, aft))
 
-    return 0.5 * x ** 2
+    # return 0.5 * x ** 2
 
 
 def gen_orthonormal_states(pre_existing_states: np.ndarray, size, fix_artifacts=True):
