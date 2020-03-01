@@ -50,14 +50,18 @@ def energy(psi: np.ndarray, V: np.ndarray, dr: float):
 
 
 def potential(r: np.ndarray):
-    # length = len(x)
-    # third = length // 3
-    # mid, bef = np.zeros(third + 1), np.linspace(np.inf, np.inf, third)
-    # # mid, bef = np.zeros(third + 1), np.linspace(10, 10, third)
-    # aft = bef.copy()
-    # return np.concatenate((bef, mid, aft))
+    V = []
+    for ax in range(len(r)):
+        # length = len(r[ax])
+        # third = length // 3
+        # mid, bef = np.zeros(third + 1), np.linspace(np.inf, np.inf, third)
+        # # mid, bef = np.zeros(third + 1), np.linspace(10, 10, third)
+        # aft = bef.copy()
+        # V += [np.concatenate((bef, mid, aft))]
 
-    return 0.5 * r ** 2
+        # V += [0.5 * r[ax] ** 2]
+        V += [1 / r[ax]]
+    return V
 
 
 def gen_orthonormal_states(pre_existing_states: np.ndarray, num_axes, axis_size, fix_artifacts=True):
@@ -170,16 +174,19 @@ def nth_state(start: float, stop: float, num_axes: int, axis_length: int, num_it
 
 
 def main():
-    a, b, num_axes, N, num_iterations = -5, 5, 2, 100, 10 ** 5
+    a, b, num_axes, N, num_iterations = 0.0001, 10, 1, 100, 10 ** 5
+
     x = np.linspace(a, b, N)
     r = np.empty((num_axes, N))
     for ax in range(num_axes):
         r[ax] = x.copy()
 
     dr = (b - a) / N
+
     generate_derivative_matrix(N, dr)
     existing_states = np.zeros((num_axes, N))
     psi_by_axis = []
+
     num_states = 2
     for i in range(num_states):
         psi = nth_state(a, b, num_axes, N, num_iterations, existing_states)
