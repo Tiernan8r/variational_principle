@@ -7,8 +7,16 @@ import scipy.linalg as la
 
 # global constants:
 hbar = 6.582119569 * 10 ** -16  # 6.582119569x10^-16 (from wikipedia)
-m = 9.1093837015 * 10 ** -31  # 9.1093837015(28)x10^-31
+# electron
+# m = 9.1093826 * 10 ** -31  # 9.1093837015(28)x10^-31
+# for alpha particle:
+m = 2 * 1.67492728 * 10 ** -27 + 2 * 1.67262171 * 10 ** -27  # 9.1093837015(28)x10^-31
 factor = -(hbar ** 2) / (2 * m)
+
+pi = np.pi
+e_0 = 8.854187817 * 10 ** -12
+Z = 82
+e = 1.60217653 * 10 ** -19
 
 
 def normalise(psi: np.ndarray, dx: float):
@@ -52,15 +60,25 @@ def energy(psi: np.ndarray, V: np.ndarray, dr: float):
 def potential(r: np.ndarray):
     V = []
     for ax in range(len(r)):
-        # length = len(r[ax])
-        # third = length // 3
-        # mid, bef = np.zeros(third + 1), np.linspace(np.inf, np.inf, third)
-        # # mid, bef = np.zeros(third + 1), np.linspace(10, 10, third)
-        # aft = bef.copy()
-        # V += [np.concatenate((bef, mid, aft))]
+        axis_length = len(r[ax])
+        third = axis_length // 3
+        mid, bef = np.zeros(third + 1), np.linspace(np.inf, np.inf, third)
+        # mid, bef = np.zeros(third + 1), np.linspace(10, 10, third)
+        aft = bef.copy()
+        V += [np.concatenate((bef, mid, aft))]
+
+        # B_c = 10
+        # U = -15
+        #
+        # axis_length = len(r[ax])
+        # third = axis_length // 3
+        # well = np.concatenate(([10**5], np.linspace(U, U, third), [B_c]))
+        # r_aft = r[ax][third + 2:]
+        # coulomb = (Z - 2) * 2 * e ** 2 / (4 * pi * e_0 * r_aft)
+        # V += [np.concatenate((well, coulomb))]
 
         # V += [0.5 * r[ax] ** 2]
-        V += [1 / r[ax]]
+        # V += [1 / r[ax]]
     return np.array(V)
 
 
@@ -87,7 +105,7 @@ def gen_orthonormal_states(pre_existing_states: np.ndarray, num_axes, axis_size,
 
 def nth_state(start: float, stop: float, num_axes: int, axis_length: int, num_iterations: int,
               previous_states: np.ndarray,
-              fix_infinities=True, fix_artifacts=True):
+              fix_infinities=True, fix_artifacts=True, include_potential=False, plot_scale=10):
     n = (len(previous_states) // num_axes) - 1
 
     t1 = time.time()
@@ -124,7 +142,9 @@ def nth_state(start: float, stop: float, num_axes: int, axis_length: int, num_it
             for k in range(len(psi[ax])):
                 if not np.isfinite(V[ax, k]):
                     for j in range(len(orthonormal_states)):
-                        orthonormal_states[ax, j, k] = 0
+                        orthonormal_states[j, k] = 0
+                        # pass
+                        # TODO: fix this for n dimensions.
 
     psi = normalise(psi, dr)
 
@@ -164,7 +184,12 @@ def nth_state(start: float, stop: float, num_axes: int, axis_length: int, num_it
 
     for ax in range(num_axes):
         a = axes[ax]
-        plt.plot(r[ax], psi[ax])
+        if include_potential:
+            plt.plot(r[ax], V[ax])
+            plt.plot(r[ax], psi[ax] * plot_scale)
+            plt.legend(("Potential", "{}th State".format(n)))
+        else:
+            plt.plot(r[ax], psi[ax])
         plt.title("The {}th State for the Harmonic Oscillator along ${}$".format(n, a))
         plt.xlabel("${}$".format(a))
         plt.ylabel("$\psi$")
@@ -174,12 +199,18 @@ def nth_state(start: float, stop: float, num_axes: int, axis_length: int, num_it
 
 
 def main():
-    a, b, num_axes, N, num_iterations = 0.0001, 10, 1, 100, 10 ** 5
+    a, b, num_axes, N = 0, 1 * 10 ** -26, 1, 100
+    num_states = 2
+    num_iterations = 10 ** 5
+
+    include_potential = False
+    potential_scaling = 10000
 
     x = np.linspace(a, b, N)
     r = np.empty((num_axes, N))
     for ax in range(num_axes):
         r[ax] = x.copy()
+    V = potential(r)
 
     dr = (b - a) / N
 
@@ -187,9 +218,9 @@ def main():
     existing_states = np.zeros((num_axes, N))
     psi_by_axis = []
 
-    num_states = 2
     for i in range(num_states):
-        psi = nth_state(a, b, num_axes, N, num_iterations, existing_states)
+        psi = nth_state(a, b, num_axes, N, num_iterations, existing_states, include_potential=include_potential,
+                        plot_scale=potential_scaling)
 
         existing_states = np.vstack((existing_states, psi))
 
@@ -202,15 +233,37 @@ def main():
             psi_by_axis = tmp_psi_by_axis.copy()
 
     for ax in range(num_axes):
+
+        scale = 1
+        if include_potential:
+            scale = potential_scaling
+            plt.plot(r[ax], V[ax])
+
         for n in range(len(psi_by_axis[ax])):
-            plt.plot(r[ax], psi_by_axis[ax][n])
+            plt.plot(r[ax], psi_by_axis[ax][n] * scale)
 
         a = axes[ax]
         plt.title("Wavefunctions $\psi$ for the Finite Square Well along ${}$:".format(a))
         plt.xlabel("${}$".format(a))
         plt.ylabel("$\psi$")
-        plt.legend(("Ground State", "Second State", "Third State", "Fourth State", "..."))
+        if not include_potential:
+            plt.legend(("Ground State", "Second State", "Third State", "Fourth State", "..."))
+        else:
+            plt.legend(("Potential", "Ground State", "Second State", "Third State", "Fourth State", "..."))
         plt.show()
 
 
 main()
+
+# a, b, num_axes, N, num_iterations = 0, 1*10**-26, 1, 100, 10 ** 5
+#
+# x = np.linspace(a, b, N)
+# r = np.empty((num_axes, N))
+# for ax in range(num_axes):
+#     r[ax] = x.copy()
+# V = potential(r)
+#
+# for ax in range(num_axes):
+#     plt.plot(r[ax], V[ax])
+#     plt.title(str(ax))
+#     plt.show()
