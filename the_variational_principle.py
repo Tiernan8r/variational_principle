@@ -61,7 +61,7 @@ def potential(r: np.ndarray):
 
         # V += [0.5 * r[ax] ** 2]
         V += [1 / r[ax]]
-    return V
+    return np.array(V)
 
 
 def gen_orthonormal_states(pre_existing_states: np.ndarray, num_axes, axis_size, fix_artifacts=True):
