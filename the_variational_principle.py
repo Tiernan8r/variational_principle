@@ -19,6 +19,7 @@ def normalise(psi: np.ndarray, dx: float):
 
 
 global A
+axes = ("x", "y", "z", "w", "q", "r", "s", "t", "u", "v")
 
 
 def generate_derivative_matrix(axis_length: int, dr: float):
@@ -158,10 +159,11 @@ def nth_state(start: float, stop: float, num_axes: int, axis_length: int, num_it
         psi = normalise(psi, dr)
 
     for ax in range(num_axes):
+        a = axes[ax]
         plt.plot(r[ax], psi[ax])
-        plt.title("The {0}th State for the Harmonic Oscillator along <{1}>:".format(n, ax))
+        plt.title("The {}th State for the Harmonic Oscillator along ${}$".format(n, a))
+        plt.xlabel("${}$".format(a))
         plt.ylabel("$\psi$")
-        plt.xlabel("$r_{}$".format(ax))
         plt.show()
 
     return psi
@@ -177,23 +179,31 @@ def main():
     dr = (b - a) / N
     generate_derivative_matrix(N, dr)
     existing_states = np.zeros((num_axes, N))
-    number_states = 5
-    for i in range(number_states):
+    psi_by_axis = []
+    num_states = 2
+    for i in range(num_states):
         psi = nth_state(a, b, num_axes, N, num_iterations, existing_states)
 
-        if existing_states.size == 0:
-            existing_states = np.array([psi])
+        existing_states = np.vstack((existing_states, psi))
+
+        if len(psi_by_axis) == 0:
+            psi_by_axis = psi.copy()
         else:
-            existing_states = np.vstack((existing_states, psi))
+            tmp_psi_by_axis = []
+            for ax in range(num_axes):
+                tmp_psi_by_axis += [np.append([psi_by_axis[ax]], [psi[ax]], axis=0)]
+            psi_by_axis = tmp_psi_by_axis.copy()
 
-    for j in range(existing_states.shape[0]):
-        plt.plot(x, existing_states[j])
+    for ax in range(num_axes):
+        for n in range(len(psi_by_axis[ax])):
+            plt.plot(r[ax], psi_by_axis[ax][n])
 
-    plt.title("Wavefunctions $\psi$ for the Finite Square Well:")
-    plt.xlabel("x")
-    plt.ylabel("$\psi$")
-    plt.legend(("Ground State", "Second State", "Third State", "Fourth State", "..."))
-    plt.show()
+        a = axes[ax]
+        plt.title("Wavefunctions $\psi$ for the Finite Square Well along ${}$:".format(a))
+        plt.xlabel("${}$".format(a))
+        plt.ylabel("$\psi$")
+        plt.legend(("Ground State", "Second State", "Third State", "Fourth State", "..."))
+        plt.show()
 
 
 main()
