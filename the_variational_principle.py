@@ -85,11 +85,10 @@ def potential(r: np.ndarray):
 def gen_orthonormal_states(pre_existing_states: np.ndarray, num_axes, axis_size, fix_artifacts=True):
     # there are no known states already
     if pre_existing_states.size == 0:
-        I = np.empty((num_axes, axis_size, axis_size))
+        identity = np.empty((num_axes, axis_size, axis_size))
         for ax in range(num_axes):
-            I[ax] = np.identity(axis_size)
-        return I
-        # return np.identity(axis_size)
+            identity[ax] = np.identity(axis_size)
+        return identity
     else:
         orthonormal_states = la.null_space(pre_existing_states)
         n = len(pre_existing_states)
@@ -252,16 +251,3 @@ def main():
 
 
 main()
-
-# a, b, num_axes, N, num_iterations = 0, 1*10**-26, 1, 100, 10 ** 5
-#
-# x = np.linspace(a, b, N)
-# r = np.empty((num_axes, N))
-# for ax in range(num_axes):
-#     r[ax] = x.copy()
-# V = potential(r)
-#
-# for ax in range(num_axes):
-#     plt.plot(r[ax], V[ax])
-#     plt.title(str(ax))
-#     plt.show()
