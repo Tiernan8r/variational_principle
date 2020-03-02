@@ -143,8 +143,6 @@ def nth_state(start: float, stop: float, num_axes: int, axis_length: int, num_it
                 if not np.isfinite(V[ax, k]):
                     for j in range(len(orthonormal_states)):
                         orthonormal_states[j, k] = 0
-                        # pass
-                        # TODO: fix this for n dimensions.
 
     psi = normalise(psi, dr)
 
@@ -199,7 +197,7 @@ def nth_state(start: float, stop: float, num_axes: int, axis_length: int, num_it
 
 
 def main():
-    a, b, num_axes, N = 0, 1 * 10 ** -26, 1, 100
+    a, b, num_axes, N = 0, 10, 1, 100
     num_states = 2
     num_iterations = 10 ** 5
 
