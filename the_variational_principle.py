@@ -8,9 +8,9 @@ import scipy.linalg as la
 # global constants:
 hbar = 6.582119569 * 10 ** -16  # 6.582119569x10^-16 (from wikipedia)
 # electron
-# m = 9.1093826 * 10 ** -31  # 9.1093837015(28)x10^-31
+m = 9.1093826 * 10 ** -31  # 9.1093837015(28)x10^-31
 # for alpha particle:
-m = 2 * 1.67492728 * 10 ** -27 + 2 * 1.67262171 * 10 ** -27  # 9.1093837015(28)x10^-31
+# m = 2 * 1.67492728 * 10 ** -27 + 2 * 1.67262171 * 10 ** -27  # 9.1093837015(28)x10^-31
 factor = -(hbar ** 2) / (2 * m)
 
 pi = np.pi
@@ -28,6 +28,7 @@ def normalise(psi: np.ndarray, dx: float):
 
 global A
 axes = ("x", "y", "z", "w", "q", "r", "s", "t", "u", "v")
+pot_sys_name = "Linear Harmonic Oscillator"
 
 
 def generate_derivative_matrix(axis_length: int, dr: float):
@@ -60,12 +61,12 @@ def energy(psi: np.ndarray, V: np.ndarray, dr: float):
 def potential(r: np.ndarray):
     V = []
     for ax in range(len(r)):
-        axis_length = len(r[ax])
-        third = axis_length // 3
-        mid, bef = np.zeros(third + 1), np.linspace(np.inf, np.inf, third)
+        # axis_length = len(r[ax])
+        # third = axis_length // 3
+        # # mid, bef = np.zeros(third + 1), np.linspace(np.inf, np.inf, third)
         # mid, bef = np.zeros(third + 1), np.linspace(10, 10, third)
-        aft = bef.copy()
-        V += [np.concatenate((bef, mid, aft))]
+        # aft = bef.copy()
+        # V += [np.concatenate((bef, mid, aft))]
 
         # B_c = 10
         # U = -15
@@ -77,7 +78,7 @@ def potential(r: np.ndarray):
         # coulomb = (Z - 2) * 2 * e ** 2 / (4 * pi * e_0 * r_aft)
         # V += [np.concatenate((well, coulomb))]
 
-        # V += [0.5 * r[ax] ** 2]
+        V += [0.5 * r[ax] ** 2]
         # V += [1 / r[ax]]
     return np.array(V)
 
@@ -113,7 +114,7 @@ def nth_state(start: float, stop: float, num_axes: int, axis_length: int, num_it
     #  therefore: make 1 good -> all good?
 
     orthonormal_states = gen_orthonormal_states(previous_states, num_axes, axis_length)
-    row_size = len(orthonormal_states)
+    num_columns = len(orthonormal_states)
 
     random.seed("THE-VARIATIONAL-PRINCIPLE")
 
@@ -149,7 +150,7 @@ def nth_state(start: float, stop: float, num_axes: int, axis_length: int, num_it
     print("Initial Energy:", prev_E)
 
     for i in range(num_iterations):
-        rand_index = random.randrange(1, row_size - 1)
+        rand_index = random.randrange(1, num_columns - 1)
 
         rand_change = random.random() * 0.1 * (num_iterations - i) / num_iterations
 
@@ -187,7 +188,7 @@ def nth_state(start: float, stop: float, num_axes: int, axis_length: int, num_it
             plt.legend(("Potential", "{}th State".format(n)))
         else:
             plt.plot(r[ax], psi[ax])
-        plt.title("The {}th State for the Harmonic Oscillator along ${}$".format(n, a))
+        plt.title("The {}th State for the {} along ${}$".format(n, pot_sys_name, a))
         plt.xlabel("${}$".format(a))
         plt.ylabel("$\psi$")
         plt.show()
@@ -195,38 +196,74 @@ def nth_state(start: float, stop: float, num_axes: int, axis_length: int, num_it
     return psi
 
 
+def plotting(r, all_psi, num_axes, include_V=False, V=None):
+    if num_axes == 2:
+        if include_V:
+            # TODO: implement
+            return
+        else:
+            num_states = (len(all_psi) // num_axes) - 1
+            for n in range(num_states):
+                x = r[0]
+                y = r[1]
+
+                XX, YY = np.meshgrid(x, y)
+
+                psi_x = all_psi[2 * (n + 1)]
+                psi_y = all_psi[2 * (n + 1) + 1]
+
+                psi_XX, psi_YY = np.meshgrid(psi_x, psi_y)
+                Z = psi_XX + psi_YY
+
+                cmap = plt.cm.get_cmap("cool")
+
+                plt.contourf(XX, YY, Z, cmap=cmap)
+                plt.title("$\psi_{}$ for the {} along $x$ & $y$".format(n, pot_sys_name))
+                plt.xlabel("$x$")
+                plt.ylabel("$y$")
+                plt.show()
+
+    else:
+        return
+
+
 def main():
-    a, b, num_axes, N = 0, 10, 1, 100
-    num_states = 2
-    num_iterations = 10 ** 5
+    a, b, num_axes, N = -10, 10, 2, 100
+    num_states = 10
+    num_iterations = 5 * 10 ** 4
 
     include_potential = False
-    potential_scaling = 10000
+    potential_scaling = 10
 
     x = np.linspace(a, b, N)
     r = np.empty((num_axes, N))
     for ax in range(num_axes):
         r[ax] = x.copy()
+
     V = potential(r)
 
     dr = (b - a) / N
 
     generate_derivative_matrix(N, dr)
-    existing_states = np.zeros((num_axes, N))
+    all_psi = np.zeros((num_axes, N))
+    # group the psi wavefunctions according to their axes, ie all the x values together, y together, etc...
     psi_by_axis = []
 
     for i in range(num_states):
-        psi = nth_state(a, b, num_axes, N, num_iterations, existing_states, include_potential=include_potential,
+        psi = nth_state(a, b, num_axes, N, num_iterations, all_psi, include_potential=include_potential,
                         plot_scale=potential_scaling)
 
-        existing_states = np.vstack((existing_states, psi))
+        all_psi = np.vstack((all_psi, psi))
 
         if len(psi_by_axis) == 0:
-            psi_by_axis = psi.copy()
+            tmp_psi_by_axis = []
+            for ax in range(num_axes):
+                tmp_psi_by_axis += [[psi[ax].copy()]]
+            psi_by_axis = tmp_psi_by_axis.copy()
         else:
             tmp_psi_by_axis = []
             for ax in range(num_axes):
-                tmp_psi_by_axis += [np.append([psi_by_axis[ax]], [psi[ax]], axis=0)]
+                tmp_psi_by_axis += [np.append(psi_by_axis[ax], [psi[ax]], axis=0)]
             psi_by_axis = tmp_psi_by_axis.copy()
 
     for ax in range(num_axes):
@@ -240,7 +277,7 @@ def main():
             plt.plot(r[ax], psi_by_axis[ax][n] * scale)
 
         a = axes[ax]
-        plt.title("Wavefunctions $\psi$ for the Finite Square Well along ${}$:".format(a))
+        plt.title("Wavefunctions $\psi$ for the {} along ${}$:".format(pot_sys_name, a))
         plt.xlabel("${}$".format(a))
         plt.ylabel("$\psi$")
         if not include_potential:
@@ -248,6 +285,8 @@ def main():
         else:
             plt.legend(("Potential", "Ground State", "Second State", "Third State", "Fourth State", "..."))
         plt.show()
+
+    plotting(r, all_psi, num_axes)
 
 
 main()
