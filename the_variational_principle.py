@@ -29,6 +29,7 @@ def normalise(psi: np.ndarray, dx: float):
 global A
 axes = ("x", "y", "z", "w", "q", "r", "s", "t", "u", "v")
 pot_sys_name = "Linear Harmonic Oscillator"
+colour_map = "hsv"
 
 
 def generate_derivative_matrix(axis_length: int, dr: float):
@@ -197,31 +198,42 @@ def nth_state(start: float, stop: float, num_axes: int, axis_length: int, num_it
 
 
 def plotting(r, all_psi, num_axes, include_V=False, V=None):
+    def plot_img(x, y, z, title):
+        # cmap = plt.cm.get_cmap(colour_map)
+
+        # plt.contourf(x, y, z, cmap=cmap)
+        plt.contourf(x, y, z)
+        plt.title(title)
+        plt.xlabel("$x$")
+        plt.ylabel("$y$")
+        plt.show()
+
     if num_axes == 2:
+        x = r[0]
+        y = r[1]
+
+        XX, YY = np.meshgrid(x, y)
+
         if include_V:
-            # TODO: implement
-            return
-        else:
-            num_states = (len(all_psi) // num_axes) - 1
-            for n in range(num_states):
-                x = r[0]
-                y = r[1]
+            V_x = V[0]
+            V_y = V[1]
 
-                XX, YY = np.meshgrid(x, y)
+            V_XX, V_YY = np.meshgrid(V_x, V_y)
+            Z = V_XX + V_YY
 
-                psi_x = all_psi[2 * (n + 1)]
-                psi_y = all_psi[2 * (n + 1) + 1]
+            title = "The Potential function for {} along $x$ & $y$".format(pot_sys_name)
+            plot_img(XX, YY, Z, title)
 
-                psi_XX, psi_YY = np.meshgrid(psi_x, psi_y)
-                Z = psi_XX + psi_YY
+        num_states = (len(all_psi) // num_axes) - 1
+        for n in range(num_states):
+            psi_x = all_psi[2 * (n + 1)]
+            psi_y = all_psi[2 * (n + 1) + 1]
 
-                cmap = plt.cm.get_cmap("cool")
+            psi_XX, psi_YY = np.meshgrid(psi_x, psi_y)
+            Z = psi_XX + psi_YY
 
-                plt.contourf(XX, YY, Z, cmap=cmap)
-                plt.title("$\psi_{}$ for the {} along $x$ & $y$".format(n, pot_sys_name))
-                plt.xlabel("$x$")
-                plt.ylabel("$y$")
-                plt.show()
+            title = "$\psi_{}$ for the {} along $x$ & $y$".format(n, pot_sys_name)
+            plot_img(XX, YY, Z, title)
 
     else:
         return
