@@ -19,9 +19,9 @@ Z = 82
 e = 1.60217653 * 10 ** -19
 
 
-def normalise(psi: np.ndarray, dx: float):
+def normalise(psi: np.ndarray, dr: float):
     # integrate using the rectangular rule
-    norm = np.sum(psi * psi) * dx
+    norm = np.sum(psi * psi) * dr
     norm_psi = psi / np.sqrt(norm)
     return norm_psi
 
