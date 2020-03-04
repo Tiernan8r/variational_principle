@@ -100,62 +100,30 @@ def gen_orthonormal_states(pre_existing_states: np.ndarray, num_axes, axis_size,
             identity[ax] = np.identity(axis_size)
         return identity
     else:
-        # # print("PRE_EXISTING_STATES:")
-        # # print(pre_existing_states)
-        # orthonormal_states = []
-        # n = len(pre_existing_states) // num_axes
-        # for ax in range(num_axes):
-        #     # print("AXIS:", ax)
-        #     pre_psi = []
-        #     for j in range(n):
-        #         pre_psi += [pre_existing_states[ax + 2 * j]]
-        #     pre_psi = np.array(pre_psi)
-        #     # print("PRE_PSI:")
-        #     # print(pre_psi)
-        #
-        #     orthonormal_states += [la.null_space(pre_psi).T]
-        #
-        #     # print("ORTHONORMAL STATES:")
-        #     # print(orthonormal_states)
-        #
-        #     # if fix_artifacts:
-        #     #     for j in range(n):
-        #     #         for k in range(len(orthonormal_states[ax][n])):
-        #     #             orthonormal_states[ax][j][k] = 0
-        #
-        # return np.array(orthonormal_states)
+        orthonormal_states = la.null_space(pre_existing_states)
+        n = len(pre_existing_states)
 
-        orthonormal_states = []
-        for ax in range(num_axes):
-            orthonormal_states += [la.null_space(pre_existing_states[ax]).T]
-        # orthonormal_states = la.null_space(pre_existing_states)
-        # n = len(pre_existing_states)
-        n = len(pre_existing_states[0])
+        # artifacts fix
+        if fix_artifacts:
+            for j in range(n):
+                for k in range(len(orthonormal_states[n])):
+                    orthonormal_states[j, k] = 0
 
-        # # artifacts fix
-        # if fix_artifacts:
-        #     for j in range(n):
-        #         for k in range(len(orthonormal_states[n])):
-        #             orthonormal_states[j, k] = 0
-
-        # return orthonormal_states.T
-        return np.array(orthonormal_states)
+        return orthonormal_states.T
 
 
 def nth_state(start: float, stop: float, num_axes: int, axis_length: int, num_iterations: int,
-              prev_psi_by_axis: np.ndarray,
+              prev_psi: np.ndarray,
               fix_infinities=True, fix_artifacts=True, include_potential=False, plot_scale=10):
-    # n = (len(prev_psi_by_axis) // num_axes) - 1
-    n = len(prev_psi_by_axis[0]) - 1
+    n = (len(prev_psi) // num_axes) - 1
 
     t1 = time.time()
     # TODO error in inf occurs because null_space returned is wrong?
     #  occurs because 1st state == 0th state => orthonormals goosed.
     #  therefore: make 1 good -> all good?
 
-    orthonormal_states = gen_orthonormal_states(prev_psi_by_axis, num_axes, axis_length)
-    num_columns = len(orthonormal_states[0])
-    # num_columns = len(orthonormal_states)
+    orthonormal_states = gen_orthonormal_states(prev_psi, num_axes, axis_length)
+    num_columns = len(orthonormal_states)
 
     random.seed("THE-VARIATIONAL-PRINCIPLE")
 
@@ -192,26 +160,22 @@ def nth_state(start: float, stop: float, num_axes: int, axis_length: int, num_it
 
     for i in range(num_iterations):
         rand_index = random.randrange(1, num_columns - 1)
-        rand_ax = random.randrange(num_axes)
 
         rand_change = random.random() * 0.1 * (num_iterations - i) / num_iterations
 
         if random.random() > 0.5:
             rand_change *= -1
 
-        # orthonormal_basis = orthonormal_states[rand_index]
-        orthonormal_basis = orthonormal_states[rand_ax, rand_index]
+        orthonormal_basis = orthonormal_states[rand_index]
 
-        # psi += orthonormal_basis * rand_change
-        psi[rand_ax] += orthonormal_basis * rand_change
+        psi += orthonormal_basis * rand_change
         psi = normalise(psi, dr)
 
         new_E = energy(psi, V, dr)
         if new_E < prev_E:
             prev_E = new_E
         else:
-            # psi -= orthonormal_basis * rand_change
-            psi[rand_ax] -= orthonormal_basis * rand_change
+            psi -= orthonormal_basis * rand_change
             psi = normalise(psi, dr)
 
     print("Final Energy:", energy(psi, V, dr))
@@ -305,30 +269,24 @@ def main():
     generate_derivative_matrix(N, dr)
     all_psi = np.zeros((num_axes, N))
     # group the psi wavefunctions according to their axes, ie all the x values together, y together, etc...
-    psi_by_axis = np.zeros((num_axes, 1, N))
+    psi_by_axis = []
 
     for i in range(num_states):
-        # psi = nth_state(a, b, num_axes, N, num_iterations, all_psi, include_potential=include_potential,
-        #                 plot_scale=potential_scaling)
-        psi = nth_state(a, b, num_axes, N, num_iterations, psi_by_axis, include_potential=include_potential,
+        psi = nth_state(a, b, num_axes, N, num_iterations, all_psi, include_potential=include_potential,
                         plot_scale=potential_scaling)
 
         all_psi = np.vstack((all_psi, psi))
 
-        # if len(psi_by_axis) <= 2:
-        #     tmp_psi_by_axis = []
-        #     for ax in range(num_axes):
-        #         tmp_psi_by_axis += [[psi[ax].copy()]]
-        #     psi_by_axis = tmp_psi_by_axis.copy()
-        # else:
-        #     tmp_psi_by_axis = []
-        #     for ax in range(num_axes):
-        #         tmp_psi_by_axis += [np.append(psi_by_axis[ax], [psi[ax]], axis=0)]
-        #     psi_by_axis = tmp_psi_by_axis.copy()
-        tmp_psi_by_axis = []
-        for ax in range(num_axes):
-            tmp_psi_by_axis += [np.append(psi_by_axis[ax], [psi[ax]], axis=0)]
-        psi_by_axis = np.array(tmp_psi_by_axis).copy()
+        if len(psi_by_axis) == 0:
+            tmp_psi_by_axis = []
+            for ax in range(num_axes):
+                tmp_psi_by_axis += [[psi[ax].copy()]]
+            psi_by_axis = tmp_psi_by_axis.copy()
+        else:
+            tmp_psi_by_axis = []
+            for ax in range(num_axes):
+                tmp_psi_by_axis += [np.append(psi_by_axis[ax], [psi[ax]], axis=0)]
+            psi_by_axis = tmp_psi_by_axis.copy()
 
     for ax in range(num_axes):
 
