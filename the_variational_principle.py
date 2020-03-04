@@ -21,7 +21,12 @@ e = 1.60217653 * 10 ** -19
 
 def normalise(psi: np.ndarray, dr: float):
     # integrate using the rectangular rule
-    norm = np.sum(psi * psi) * dr
+    # norm = np.sum(psi * psi) * dr
+    norm = 0
+    psi_sq = psi * psi
+    for ax in range(len(psi_sq)):
+        norm += np.sum(psi_sq[ax])
+    norm *= dr
     norm_psi = psi / np.sqrt(norm)
     return norm_psi
 
