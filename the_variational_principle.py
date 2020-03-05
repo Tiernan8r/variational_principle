@@ -141,7 +141,7 @@ def nth_state(start: float, stop: float, axis_length: int, num_iterations: int,
             prev_E = new_E
         else:
             psi -= orthonormal_basis * rand_change
-            psi = normalise(psi, dx)
+            # psi = normalise(psi, dx)
 
     print("Final Energy:", energy(psi, V, dx))
     t2 = time.time()
