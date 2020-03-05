@@ -32,6 +32,7 @@ pot_sys_name = "Linear Harmonic Oscillator"
 colour_map = "hsv"
 
 
+# TODO this definitely needs an overhaul.
 def generate_derivative_matrix(axis_length: int, dx: float):
     global A
     A = np.zeros((axis_length, axis_length))
@@ -50,10 +51,13 @@ def energy(psi: np.ndarray, V: np.ndarray, dx: float):
     # A is the 2nd derivative matrix.
     Tp = factor * (A @ psi)
 
+    # TODO sum may need to change for n dimensions.
     return np.sum(psi * (Tp + Vp)) * dx
 
 
 def potential(x: np.ndarray):
+    # TODO needs overhaul?
+
     # length = len(x)
     # third = length // 3
     # # mid, bef = numpy.zeros(third + 1), numpy.linspace(numpy.inf, numpy.inf, third)
@@ -65,6 +69,8 @@ def potential(x: np.ndarray):
 
 
 def gen_orthonormal_states(pre_existing_states: np.ndarray, axis_size, fix_artifacts=True):
+    # TODO needs nD TLC.
+
     # there are no known states already
     if pre_existing_states.size == 0:
         return np.identity(axis_size)
@@ -85,6 +91,8 @@ def gen_orthonormal_states(pre_existing_states: np.ndarray, axis_size, fix_artif
 def nth_state(start: float, stop: float, axis_length: int, num_iterations: int,
               prev_psi: np.ndarray,
               fix_infinities=True, fix_artifacts=True, include_potential=False, plot_scale=10):
+    # TODO overhaul
+
     n = len(prev_psi)
 
     t1 = time.time()
@@ -167,49 +175,51 @@ def nth_state(start: float, stop: float, axis_length: int, num_iterations: int,
     return psi
 
 
-def plotting(r, all_psi, num_axes, include_V=False, V=None):
-    def plot_img(x, y, z, title):
-        # cmap = plt.cm.get_cmap(colour_map)
-
-        # plt.contourf(x, y, z, cmap=cmap)
-        plt.contourf(x, y, z)
-        plt.title(title)
-        plt.xlabel("$x$")
-        plt.ylabel("$y$")
-        plt.show()
-
-    if num_axes == 2:
-        x = r[0]
-        y = r[1]
-
-        XX, YY = np.meshgrid(x, y)
-
-        if include_V:
-            V_x = V[0]
-            V_y = V[1]
-
-            V_XX, V_YY = np.meshgrid(V_x, V_y)
-            Z = V_XX + V_YY
-
-            title = "The Potential function for {} along $x$ & $y$".format(pot_sys_name)
-            plot_img(XX, YY, Z, title)
-
-        num_states = (len(all_psi) // num_axes) - 1
-        for n in range(num_states):
-            psi_x = all_psi[2 * (n + 1)]
-            psi_y = all_psi[2 * (n + 1) + 1]
-
-            psi_XX, psi_YY = np.meshgrid(psi_x, psi_y)
-            Z = psi_XX + psi_YY
-
-            title = "$\psi_{}$ for the {} along $x$ & $y$".format(n, pot_sys_name)
-            plot_img(XX, YY, Z, title)
-
-    else:
-        return
+# def plotting(r, all_psi, num_axes, include_V=False, V=None):
+#     def plot_img(x, y, z, title):
+#         # cmap = plt.cm.get_cmap(colour_map)
+#
+#         # plt.contourf(x, y, z, cmap=cmap)
+#         plt.contourf(x, y, z)
+#         plt.title(title)
+#         plt.xlabel("$x$")
+#         plt.ylabel("$y$")
+#         plt.show()
+#
+#     if num_axes == 2:
+#         x = r[0]
+#         y = r[1]
+#
+#         XX, YY = np.meshgrid(x, y)
+#
+#         if include_V:
+#             V_x = V[0]
+#             V_y = V[1]
+#
+#             V_XX, V_YY = np.meshgrid(V_x, V_y)
+#             Z = V_XX + V_YY
+#
+#             title = "The Potential function for {} along $x$ & $y$".format(pot_sys_name)
+#             plot_img(XX, YY, Z, title)
+#
+#         num_states = (len(all_psi) // num_axes) - 1
+#         for n in range(num_states):
+#             psi_x = all_psi[2 * (n + 1)]
+#             psi_y = all_psi[2 * (n + 1) + 1]
+#
+#             psi_XX, psi_YY = np.meshgrid(psi_x, psi_y)
+#             Z = psi_XX + psi_YY
+#
+#             title = "$\psi_{}$ for the {} along $x$ & $y$".format(n, pot_sys_name)
+#             plot_img(XX, YY, Z, title)
+#
+#     else:
+#         return
 
 
 def main():
+    # TODO overhaul
+
     a, b, N = -10, 10, 100
     num_states = 2
     num_iterations = num_states * 10 ** 5
