@@ -9,17 +9,11 @@ import scipy.linalg as la
 hbar = 6.582119569 * 10 ** -16  # 6.582119569x10^-16 (from wikipedia)
 # electron
 m = 9.1093826 * 10 ** -31  # 9.1093837015(28)x10^-31
-# for alpha particle:
-# m = 2 * 1.67492728 * 10 ** -27 + 2 * 1.67262171 * 10 ** -27  # 9.1093837015(28)x10^-31
 factor = -(hbar ** 2) / (2 * m)
 
-pi = np.pi
-e_0 = 8.854187817 * 10 ** -12
-Z = 82
-e = 1.60217653 * 10 ** -19
-
-
 def normalise(psi: np.ndarray, dx: float):
+    # TODO overhaul? .. no
+
     # integrate using the rectangular rule
     norm = np.sum(psi * psi) * dx
     norm_psi = psi / np.sqrt(norm)
@@ -43,13 +37,18 @@ def generate_derivative_matrix(axis_length: int, dx: float):
     return A * (dx ** -2)
 
 
+def dev2(f):
+    global A
+    return A @ f
+
+
 def energy(psi: np.ndarray, V: np.ndarray, dx: float):
     # when V is inf, wil get an invalid value error at runtime, not an issue, is sorted in filtering below:
     Vp = V * psi
     # filter out nan values in Vp
     Vp = np.where(np.isfinite(Vp), Vp, 0)
     # A is the 2nd derivative matrix.
-    Tp = factor * (A @ psi)
+    Tp = factor * dev2(psi)
 
     # TODO sum may need to change for n dimensions.
     return np.sum(psi * (Tp + Vp)) * dx
@@ -114,17 +113,17 @@ def nth_state(start: float, stop: float, axis_length: int, num_iterations: int,
     psi = np.ones(axis_length)
     psi[0], psi[-1] = 0, 0
 
-    if fix_infinities:
-        # handling for the inf values in the infinite square well, or similar:
-        for j in range(len(psi)):
-            if not np.isfinite(V[j]):
-                psi[j] = 0
-
-        # infinite fix
-        for k in range(len(psi)):
-            if not np.isfinite(V[k]):
-                for j in range(len(orthonormal_states)):
-                    orthonormal_states[j, k] = 0
+    # if fix_infinities:
+    #     # handling for the inf values in the infinite square well, or similar:
+    #     for j in range(len(psi)):
+    #         if not np.isfinite(V[j]):
+    #             psi[j] = 0
+    #
+    #     # infinite fix
+    #     for k in range(len(psi)):
+    #         if not np.isfinite(V[k]):
+    #             for j in range(len(orthonormal_states)):
+    #                 orthonormal_states[j, k] = 0
 
     psi = normalise(psi, dx)
 
@@ -155,11 +154,11 @@ def nth_state(start: float, stop: float, axis_length: int, num_iterations: int,
     t2 = time.time()
     print("The time for the " + str(n) + "th iteration is:", t2 - t1, "s.\n")
 
-    # Correction of artifacts at edge:
-    if fix_artifacts:
-        for j in range(n + 1):
-            psi[j] = 0
-        psi = normalise(psi, dx)
+    # # Correction of artifacts at edge:
+    # if fix_artifacts:
+    #     for j in range(n + 1):
+    #         psi[j] = 0
+    #     psi = normalise(psi, dx)
 
     if include_potential:
         plt.plot(x, V)
@@ -221,20 +220,25 @@ def main():
     # TODO overhaul
 
     a, b, N = -10, 10, 100
-    num_states = 2
-    num_iterations = num_states * 10 ** 5
+    # a, b, N = -10, 10, 3
+    num_states = 1
+    num_axes = 1
+    num_iterations = 10 ** 5
 
     include_potential = False
     potential_scaling = 10
 
     x = np.linspace(a, b, N)
+    tmp_r = [x] * num_axes
+    r = np.array(np.meshgrid(*tmp_r, indexing="ij"))
 
-    V = potential(x)
+    V = potential(r)
 
-    dx = (b - a) / N
+    dr = (b - a) / N
 
-    generate_derivative_matrix(N, dx)
-    all_psi = np.zeros((1, N))
+    generate_derivative_matrix(N, dr)
+    # all_psi stores each nth state of psi as a list of the psi states.
+    all_psi = np.zeros([1] + [N] * num_axes)
 
     for i in range(num_states):
         psi = nth_state(a, b, N, num_iterations, all_psi, include_potential=include_potential,
