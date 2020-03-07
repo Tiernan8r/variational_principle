@@ -69,7 +69,7 @@ B = np.array([[[1, 2, 3], [4, 5, 6], [7, 8, 9]], [[11, 12, 13], [14, 15, 16], [1
 # print(B_2)
 
 
-# def general_D(num: int, N: int, axis: str):
+# def dev_mat(num: int, N: int, axis: str):
 #     # make axis into an integer.
 #
 #     if axis == "x":
@@ -146,7 +146,7 @@ def generate_derivative_matrix(num_axes: int, axis_length: int, dr: float):
     DEV2 *= (dr ** -2)
 
 
-# D = general_D(num, N, 2)
+# D = dev_mat(num, N, 2)
 # print()
 # print(D)
 
