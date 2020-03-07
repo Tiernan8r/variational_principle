@@ -11,9 +11,8 @@ hbar = 6.582119569 * 10 ** -16  # 6.582119569x10^-16 (from wikipedia)
 m = 9.1093826 * 10 ** -31  # 9.1093837015(28)x10^-31
 factor = -(hbar ** 2) / (2 * m)
 
-def normalise(psi: np.ndarray, dx: float):
-    # TODO overhaul? .. no
 
+def normalise(psi: np.ndarray, dx: float):
     # integrate using the rectangular rule
     norm = np.sum(psi * psi) * dx
     norm_psi = psi / np.sqrt(norm)
