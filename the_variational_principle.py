@@ -49,16 +49,13 @@ def gen_DEV2(num_axes: int, axis_length: int, dr: float):
 
     for ax in range(num_axes):
         D = dev_mat(num_axes, axis_length, ax)
-        print("FOR", ax, "D IS:")
-        print(D.toarray())
         if DEV2 is None:
             DEV2 = D
         else:
             DEV2 += D
 
     DEV2 *= (dr ** -2)
-    print("DEV2")
-    print(DEV2.toarray())
+
 
 def energy(psi: np.ndarray, V: np.ndarray, dx: float):
     # when V is inf, wil get an invalid value error at runtime, not an issue, is sorted in filtering below:
