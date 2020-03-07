@@ -4,6 +4,7 @@ import time
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.linalg as la
+import scipy.sparse as spr
 
 # global constants:
 hbar = 6.582119569 * 10 ** -16  # 6.582119569x10^-16 (from wikipedia)
@@ -19,27 +20,45 @@ def normalise(psi: np.ndarray, dx: float):
     return norm_psi
 
 
-global A
+global DEV2
 axes = ("x", "y", "z", "w", "q", "r", "s", "t", "u", "v")
 pot_sys_name = "Linear Harmonic Oscillator"
 colour_map = "hsv"
 
 
-# TODO this definitely needs an overhaul.
-def generate_derivative_matrix(axis_length: int, dx: float):
-    global A
-    A = np.zeros((axis_length, axis_length))
-    for i in range(1, axis_length - 1):
-        A[i, i - 1], A[i, i], A[i, i + 1] = 1, -2, 1
-    # forward & backward difference at the edges
-    A[0, 0], A[0, 1], A[0, 2], A[-1, -1], A[-1, -2], A[-1, -3] = 1, -2, 1, 1, -2, 1
-    return A * (dx ** -2)
+def dev_mat(num_axes: int, N: int, axis_number: int):
+    # missing the 1/dr^2 factor
+
+    # cap axis_number in range to prevent errors.
+    axis_number %= num_axes
+
+    num_repeats = num_axes - (axis_number + 1)
+    # The general pattern for a derivative matrix along the axis: axis_number, for a num_axes number of
+    # dimensions, each of length N
+    diagonals = [[-2] * N ** num_axes,
+                 (([1] * N ** axis_number) * (N - 1) + [0] * N ** axis_number) * N ** num_repeats,
+                 (([1] * N ** axis_number) * (N - 1) + [0] * N ** axis_number) * N ** num_repeats]
+    D = spr.diags(diagonals, [0, -N ** axis_number, N ** axis_number], shape=(N ** num_axes, N ** num_axes))
+    return D
 
 
-def dev2(f):
-    global A
-    return A @ f
+def gen_DEV2(num_axes: int, axis_length: int, dr: float):
+    global DEV2
 
+    DEV2 = None
+
+    for ax in range(num_axes):
+        D = dev_mat(num_axes, axis_length, ax)
+        print("FOR", ax, "D IS:")
+        print(D.toarray())
+        if DEV2 is None:
+            DEV2 = D
+        else:
+            DEV2 += D
+
+    DEV2 *= (dr ** -2)
+    print("DEV2")
+    print(DEV2.toarray())
 
 def energy(psi: np.ndarray, V: np.ndarray, dx: float):
     # when V is inf, wil get an invalid value error at runtime, not an issue, is sorted in filtering below:
@@ -47,7 +66,7 @@ def energy(psi: np.ndarray, V: np.ndarray, dx: float):
     # filter out nan values in Vp
     Vp = np.where(np.isfinite(Vp), Vp, 0)
     # A is the 2nd derivative matrix.
-    Tp = factor * dev2(psi)
+    Tp = factor * (DEV2 @ psi)
 
     # TODO sum may need to change for n dimensions.
     return np.sum(psi * (Tp + Vp)) * dx
@@ -71,7 +90,7 @@ def gen_orthonormal_states(pre_existing_states: np.ndarray, axis_size, fix_artif
 
     # there are no known states already
     if pre_existing_states.size == 0:
-        return np.identity(axis_size)
+        return spr.identity(axis_size)
     else:
 
         orthonormal_states = la.null_space(pre_existing_states)
@@ -219,7 +238,6 @@ def main():
     # TODO overhaul
 
     a, b, N = -10, 10, 100
-    # a, b, N = -10, 10, 3
     num_states = 1
     num_axes = 1
     num_iterations = 10 ** 5
@@ -235,7 +253,7 @@ def main():
 
     dr = (b - a) / N
 
-    generate_derivative_matrix(N, dr)
+    gen_DEV2(num_axes, N, dr)
     # all_psi stores each nth state of psi as a list of the psi states.
     all_psi = np.zeros([1] + [N] * num_axes)
 
