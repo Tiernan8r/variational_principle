@@ -12,18 +12,17 @@ hbar = 6.582119569 * 10 ** -16  # 6.582119569x10^-16 (from wikipedia)
 m = 9.1093826 * 10 ** -31  # 9.1093837015(28)x10^-31
 factor = -(hbar ** 2) / (2 * m)
 
-
-def normalise(psi: np.ndarray, dx: float):
-    # integrate using the rectangular rule
-    norm = np.sum(psi * psi) * dx
-    norm_psi = psi / np.sqrt(norm)
-    return norm_psi
-
-
 global DEV2
 axes = ("x", "y", "z", "w", "q", "r", "s", "t", "u", "v")
 pot_sys_name = "Linear Harmonic Oscillator"
 colour_map = "hsv"
+
+
+def normalise(psi: np.ndarray, dr: float, num_axes: int):
+    # integrate using the rectangular rule
+    norm = np.sum(psi * psi) * (dr ** num_axes)
+    norm_psi = psi / np.sqrt(norm)
+    return norm_psi
 
 
 def dev_mat(num_axes: int, N: int, axis_number: int):
