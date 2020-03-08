@@ -66,12 +66,10 @@ def energy(psi: np.ndarray, V: np.ndarray, dx: float):
     Tp = factor * (DEV2 @ psi)
 
     # TODO sum may need to change for n dimensions.
-    return np.sum(psi * (Tp + Vp)) * dx
+    return np.sum(psi * (Tp + Vp)) * (dr ** num_axes)
 
 
-def potential(x: np.ndarray):
-    # TODO needs overhaul?
-
+def potential(r: np.ndarray):
     # length = len(x)
     # third = length // 3
     # # mid, bef = numpy.zeros(third + 1), numpy.linspace(numpy.inf, numpy.inf, third)
@@ -79,7 +77,7 @@ def potential(x: np.ndarray):
     # aft = bef.copy()
     # return numpy.concatenate((bef, mid, aft))
 
-    return 0.5 * x ** 2
+    return np.sum(0.5 * r ** 2, axis=0)
 
 
 def gen_orthonormal_states(pre_existing_states: np.ndarray, axis_size, fix_artifacts=True):
