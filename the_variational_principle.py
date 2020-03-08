@@ -267,8 +267,8 @@ def main():
         scale = potential_scaling
         plt.plot(x, V)
 
-    for n in range(len(all_psi)):
-        plt.plot(x, all_psi[n] * scale)
+        for n in range(len(all_psi_linear)):
+            plt.plot(x, all_psi_linear[n] * scale)
 
     plt.title("Wavefunctions $\psi$ for the {} along ${}$:".format(pot_sys_name, "x"))
     plt.xlabel("${}$".format(a))
