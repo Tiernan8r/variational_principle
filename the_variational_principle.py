@@ -99,11 +99,9 @@ def gen_orthonormal_states(pre_existing_states: np.ndarray, axis_size, fix_artif
         return orthonormal_states.T
 
 
-def nth_state(start: float, stop: float, axis_length: int, num_iterations: int,
+def nth_state(r: np.ndarray, dr: float, num_axes: int, axis_length: int, num_iterations: int,
               prev_psi: np.ndarray,
               fix_infinities=True, fix_artifacts=True, include_potential=False, plot_scale=10):
-    # TODO overhaul
-
     n = len(prev_psi)
 
     t1 = time.time()
@@ -112,18 +110,25 @@ def nth_state(start: float, stop: float, axis_length: int, num_iterations: int,
     #  therefore: make 1 good -> all good?
 
     orthonormal_states = gen_orthonormal_states(prev_psi, axis_length)
+
     num_columns = orthonormal_states.shape[0]
 
     random.seed("THE-VARIATIONAL-PRINCIPLE")
 
-    dx = (stop - start) / axis_length
+    V = potential(r)
+    V = V.reshape(axis_length ** num_axes)
 
-    x = np.linspace(start, stop, axis_length)
-
-    V = potential(x)
-
-    psi = np.ones(axis_length)
+    psi = np.ones([axis_length] * num_axes)
+    # The Boundary Conditions
     psi[0], psi[-1] = 0, 0
+    if num_axes > 1:
+        for ax in range(1, axis_length - 1):
+            row = psi[ax]
+            col = row.T
+            row[0], row[-1], col[0], col[-1] = 0, 0, 0, 0
+
+    # linearise psi
+    psi = psi.reshape(axis_length ** num_axes)
 
     # if fix_infinities:
     #     # handling for the inf values in the infinite square well, or similar:
@@ -137,9 +142,9 @@ def nth_state(start: float, stop: float, axis_length: int, num_iterations: int,
     #             for j in range(len(orthonormal_states)):
     #                 orthonormal_states[j, k] = 0
 
-    psi = normalise(psi, dx)
+    psi = normalise(psi, dr, num_axes)
 
-    prev_E = energy(psi, V, dx)
+    prev_E = energy(psi, V, dr, num_axes)
     print("Initial Energy:", prev_E)
 
     for i in range(num_iterations):
@@ -153,16 +158,16 @@ def nth_state(start: float, stop: float, axis_length: int, num_iterations: int,
         orthonormal_basis = orthonormal_states[rand_index]
 
         psi += orthonormal_basis * rand_change
-        psi = normalise(psi, dx)
+        psi = normalise(psi, dr, num_axes)
 
-        new_E = energy(psi, V, dx)
+        new_E = energy(psi, V, dr, num_axes)
         if new_E < prev_E:
             prev_E = new_E
         else:
             psi -= orthonormal_basis * rand_change
-            # psi = normalise(psi, dx)
+            psi = normalise(psi, dr, num_axes)
 
-    print("Final Energy:", energy(psi, V, dx))
+    print("Final Energy:", energy(psi, V, dr, num_axes))
     t2 = time.time()
     print("The time for the " + str(n) + "th iteration is:", t2 - t1, "s.\n")
 
