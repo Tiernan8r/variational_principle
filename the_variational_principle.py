@@ -332,25 +332,6 @@ def main():
     all_psi = all_psi[1:]
     all_psi_linear = all_psi_linear[1:]
 
-    # # TODO fix this hack fest
-    # if num_axes == 1:
-    #     scale = 1
-    #     if include_potential:
-    #         scale = potential_scaling
-    #         plt.plot(x, V)
-    #
-    #     for n in range(len(all_psi_linear)):
-    #         plt.plot(x, all_psi_linear[n] * scale)
-    #
-    #     plt.title("Wavefunctions $\psi$ for the {} along ${}$:".format(pot_sys_name, "x"))
-    #     plt.xlabel("${}$".format(a))
-    #     plt.ylabel("$\psi$")
-    #     legend = ["Ground State", "Second State", "Third State", "Fourth State", "..."]
-    #     if include_potential:
-    #         legend = ["Potential"] + legend
-    #     plt.legend(legend)
-    #     plt.show()
-
     plotting(r, all_psi, num_axes, include_potential, V)
 
 
