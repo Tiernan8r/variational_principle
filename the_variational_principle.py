@@ -22,7 +22,7 @@ colour_map = "plasma"
 def normalise(psi: np.ndarray, dr: float, D: int) -> np.ndarray:
     # integrate using the rectangular rule
     # norm = np.sum(psi * psi) * (dr ** num_axes)
-    norm = np.sum(psi * psi) * dr
+    norm = (psi * psi).sum() * dr
     norm_psi = psi / np.sqrt(norm)
     return norm_psi
 
@@ -64,7 +64,7 @@ def energy(psi: np.ndarray, V: np.ndarray, dr: float, num_axes: int) -> float:
 
     # TODO sum may need to change for n dimensions.
     # return np.sum(psi * (Tp + Vp)) * (dr ** num_axes)
-    return np.sum(psi * (Tp + Vp)) * dr
+    return (psi * (Tp + Vp)).sum() * dr
 
 
 def potential(r: np.ndarray) -> np.ndarray:
@@ -79,9 +79,10 @@ def potential(r: np.ndarray) -> np.ndarray:
 
 
 def nth_state(r: np.ndarray, dr: float, D: int, N: int, num_iterations: int,
-              prev_psi_linear: np.ndarray,
-              fix_infinities=True, fix_artifacts=True, include_potential=False, plot_scale=10) -> np.ndarray:
-    n = len(prev_psi_linear)
+              prev_A: np.ndarray,
+              fix_infinities=True, fix_artifacts=True, include_potential=False, plot_scale=10) -> (
+        np.ndarray, np.ndarray):
+    n = len(prev_A)
 
     t1 = time.time()
     # TODO error in inf occurs because null_space returned is wrong?
@@ -89,7 +90,7 @@ def nth_state(r: np.ndarray, dr: float, D: int, N: int, num_iterations: int,
     #  therefore: make 1 good -> all good?
 
     # may need to fix artifacts...
-    orthonormal_basis = la.null_space(prev_psi_linear).T
+    orthonormal_basis = la.null_space(prev_A).T
 
     num_columns = len(orthonormal_basis)
 
@@ -147,6 +148,7 @@ def nth_state(r: np.ndarray, dr: float, D: int, N: int, num_iterations: int,
         new_E = energy(psi, V, dr, D)
         if new_E < prev_E:
             prev_E = new_E
+            A[rand_index] += rand_change
         else:
             psi -= basis_vector * rand_change
             psi = normalise(psi, dr, D)
@@ -155,13 +157,19 @@ def nth_state(r: np.ndarray, dr: float, D: int, N: int, num_iterations: int,
     t2 = time.time()
     print("The time for the " + str(n) + "th iteration is:", t2 - t1, "s.\n")
 
-    # # Correction of artifacts at edge:
-    # if fix_artifacts:
-    #     for j in range(n + 1):
-    #         psi[j] = 0
-    #     psi = normalise(psi, dx)
+    # Correction of artifacts at edge:
+    if fix_artifacts:
+        for j in range(n + 1):
+            psi[j] = 0
+        psi = normalise(psi, dr, D)
 
-    return psi.reshape([N] * D)
+    psi = psi.reshape([N] * D)
+
+    A = A / A.sum()
+    # A *= orthonormal_basis.sum(0)
+
+    # return psi, A
+    return psi, psi
 
 
 def plotting(r, all_psi, D, include_V=False, V=None):
@@ -220,11 +228,11 @@ def plotting(r, all_psi, D, include_V=False, V=None):
 
     if D == 1:
 
-        num_extra = len(all_psi) - 1
+        num_extra = len(all_psi)
 
         # legend = ["Ground State", "1st State", "2nd State", "3rd State", "4th State"]
         legend = ["Ground State"]
-        for i in range(num_extra):
+        for i in range(1, num_extra):
             th = "th"
             if i == 1:
                 th = "st"
@@ -270,40 +278,17 @@ def plotting(r, all_psi, D, include_V=False, V=None):
     else:
         return
 
-    # if num_axes == 2:
-    #
-    #     if include_V:
-    #         title = "The Potential function for {} along $x$ & $y$".format(pot_sys_name)
-    #         plot_img(*r, V, title)
-    #         plot_wireframe(*r, V, title, "V")
-    #         plot_surface(*r, V, title, "V")
-    #
-    #     num_states = len(all_psi)
-    #     for n in range(num_states):
-    #         title = "$\psi_{}$ for the {} along $x$ & $y$".format(n, pot_sys_name)
-    #         plot_img(*r, all_psi[n], title)
-    #         plot_wireframe(*r, all_psi[n], title, "$\psi$")
-    #         plot_surface(*r, all_psi[n], title, "$\psi$")
-    # elif num_axes == 1:
-    #
-    #     legend = ["Ground State", "1st State", "2nd State", "3rd State", "4th State"]
-    #     if include_V:
-    #         all_psi = [V] + all_psi
-    #         legend = ["Potential"] + legend
-    #     for i in range(len(all_psi)):
-    #         title = "The {} for the {} along $x$:".format(legend[i], pot_sys_name)
-    #         plot_line(*r, all_psi[i], title)
-    #
-    # else:
-    #     return
-
 
 def main():
 
     # initially is symmetric grid.
     a, b, N = -10, 10, 100
-    num_states = 1
+    num_states = 11
     D = 1
+    # Iteration recommendations:
+    # 10**5 for 1D
+    # 10**6 for 2D
+    # 10**7 for 3D (loooong)
     num_iterations = 10 ** 5
 
     include_potential = True
@@ -319,19 +304,27 @@ def main():
 
     gen_DEV2(D, N, dr)
     # all_psi stores each nth state of psi as a list of the psi states.
+    initially_empty = True
     all_psi_linear = np.zeros([1] + [N ** D])
     all_psi = np.zeros([1] + [N] * D)
+    # all_A = np.zeros([1] + [N ** D])
 
     for i in range(num_states):
-        psi = nth_state(r, dr, D, N, num_iterations, all_psi_linear, include_potential=include_potential,
-                        plot_scale=potential_scaling)
+        psi, A = nth_state(r, dr, D, N, num_iterations, all_psi_linear, include_potential=include_potential,
+                           plot_scale=potential_scaling)
 
-        all_psi = np.vstack((all_psi, [psi]))
-
+        # psi, A = nth_state(r, dr, D, N, num_iterations, all_A, include_potential=include_potential,
+        #                    plot_scale=potential_scaling)
         psi_linear = psi.reshape(N ** D)
-        all_psi_linear = np.vstack((all_psi_linear, [psi_linear]))
-    all_psi = all_psi[1:]
-    # all_psi_linear = all_psi_linear[1:]
+        if initially_empty:
+            all_psi_linear = np.array([psi_linear])
+            all_psi = np.array([psi])
+            # all_A = np.array([A])
+            initially_empty = False
+        else:
+            all_psi_linear = np.vstack((all_psi_linear, [psi_linear]))
+            all_psi = np.vstack((all_psi, psi))
+            # all_A = np.vstack((all_A, A))
 
     plotting(r, all_psi, D, include_potential, V)
 
