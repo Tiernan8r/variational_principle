@@ -90,6 +90,7 @@ def nth_state(r: np.ndarray, dr: float, num_axes: int, axis_length: int, num_ite
     #  occurs because 1st state == 0th state => orthonormals goosed.
     #  therefore: make 1 good -> all good?
 
+    # may need to fix artifacts...
     orthonormal_states = la.null_space(prev_psi_linear).T
 
     num_columns = len(orthonormal_states)
@@ -157,19 +158,6 @@ def nth_state(r: np.ndarray, dr: float, num_axes: int, axis_length: int, num_ite
     #     for j in range(n + 1):
     #         psi[j] = 0
     #     psi = normalise(psi, dx)
-
-    # # TODO fix this mess
-    # if num_axes == 1:
-    #     if include_potential:
-    #         plt.plot(r[0], V)
-    #         plt.plot(r[0], psi * plot_scale)
-    #         plt.legend(("Potential", "{}th State".format(n)))
-    #     else:
-    #         plt.plot(r[0], psi)
-    #     plt.title("The {}th State for the {} along ${}$".format(n, pot_sys_name, "x"))
-    #     plt.xlabel("${}$".format("x"))
-    #     plt.ylabel("$\psi$")
-    #     plt.show()
 
     return psi.reshape([axis_length] * num_axes)
 
