@@ -331,13 +331,14 @@ def plotting(r, all_psi, num_axes, include_V=False, V=None):
 def main():
     # TODO overhaul
 
+    # initially is symmetric grid.
     a, b, N = -10, 10, 100
     num_states = 1
     num_axes = 1
     num_iterations = 10 ** 5
 
-    include_potential = False
-    potential_scaling = 10
+    include_potential = True
+    potential_scaling = 100
 
     x = np.linspace(a, b, N)
     tmp_r = [x] * num_axes
@@ -356,26 +357,33 @@ def main():
         psi = nth_state(r, dr, num_axes, N, num_iterations, all_psi_linear, include_potential=include_potential,
                         plot_scale=potential_scaling)
 
-        all_psi = np.vstack((all_psi, psi))
+        all_psi = np.vstack((all_psi, [psi]))
 
-    scale = 1
-    if include_potential:
-        scale = potential_scaling
-        plt.plot(x, V)
+        psi_linear = psi.reshape(N ** num_axes)
+        all_psi_linear = np.vstack((all_psi_linear, [psi_linear]))
+    all_psi = all_psi[1:]
+    all_psi_linear = all_psi_linear[1:]
 
-        for n in range(len(all_psi_linear)):
-            plt.plot(x, all_psi_linear[n] * scale)
+    # # TODO fix this hack fest
+    # if num_axes == 1:
+    #     scale = 1
+    #     if include_potential:
+    #         scale = potential_scaling
+    #         plt.plot(x, V)
+    #
+    #     for n in range(len(all_psi_linear)):
+    #         plt.plot(x, all_psi_linear[n] * scale)
+    #
+    #     plt.title("Wavefunctions $\psi$ for the {} along ${}$:".format(pot_sys_name, "x"))
+    #     plt.xlabel("${}$".format(a))
+    #     plt.ylabel("$\psi$")
+    #     legend = ["Ground State", "Second State", "Third State", "Fourth State", "..."]
+    #     if include_potential:
+    #         legend = ["Potential"] + legend
+    #     plt.legend(legend)
+    #     plt.show()
 
-    plt.title("Wavefunctions $\psi$ for the {} along ${}$:".format(pot_sys_name, "x"))
-    plt.xlabel("${}$".format(a))
-    plt.ylabel("$\psi$")
-    if not include_potential:
-        plt.legend(("Ground State", "Second State", "Third State", "Fourth State", "..."))
-    else:
-        plt.legend(("Potential", "Ground State", "Second State", "Third State", "Fourth State", "..."))
-    plt.show()
-
-    # plotting(r, all_psi, num_axes, True, V)
+    plotting(r, all_psi, num_axes, include_potential, V)
 
 
 main()
