@@ -100,9 +100,9 @@ def gen_orthonormal_states(pre_existing_states: np.ndarray, axis_size, fix_artif
 
 
 def nth_state(r: np.ndarray, dr: float, num_axes: int, axis_length: int, num_iterations: int,
-              prev_psi: np.ndarray,
-              fix_infinities=True, fix_artifacts=True, include_potential=False, plot_scale=10):
-    n = len(prev_psi)
+              prev_psi_linear: np.ndarray,
+              fix_infinities=True, fix_artifacts=True, include_potential=False, plot_scale=10) -> np.ndarray:
+    n = len(prev_psi_linear)
 
     t1 = time.time()
     # TODO error in inf occurs because null_space returned is wrong?
@@ -178,60 +178,154 @@ def nth_state(r: np.ndarray, dr: float, num_axes: int, axis_length: int, num_ite
     #         psi[j] = 0
     #     psi = normalise(psi, dx)
 
-    if include_potential:
-        plt.plot(x, V)
-        plt.plot(x, psi * plot_scale)
-        plt.legend(("Potential", "{}th State".format(n)))
+    # # TODO fix this mess
+    # if num_axes == 1:
+    #     if include_potential:
+    #         plt.plot(r[0], V)
+    #         plt.plot(r[0], psi * plot_scale)
+    #         plt.legend(("Potential", "{}th State".format(n)))
+    #     else:
+    #         plt.plot(r[0], psi)
+    #     plt.title("The {}th State for the {} along ${}$".format(n, pot_sys_name, "x"))
+    #     plt.xlabel("${}$".format("x"))
+    #     plt.ylabel("$\psi$")
+    #     plt.show()
+
+    return psi.reshape([axis_length] * num_axes)
+
+
+def plotting(r, all_psi, num_axes, include_V=False, V=None):
+    cmap = plt.cm.get_cmap(colour_map)
+
+    def plot_wireframe(x, y, z, title, zlabel):
+        fig = plt.figure()
+        ax = fig.gca(projection="3d")
+        ax.plot_wireframe(x, y, z)
+        ax.set_zlabel(zlabel)
+        plt.title(title)
+        plt.xlabel("$x$")
+        plt.ylabel("$y$")
+        plt.show()
+
+    def plot_surface(x, y, z, title, zlabel):
+        fig = plt.figure()
+        ax = fig.gca(projection="3d")
+        surf = ax.plot_surface(x, y, z, cmap=cmap)
+        fig.colorbar(surf, ax=ax)
+        ax.set_zlabel(zlabel)
+        plt.title(title)
+        plt.xlabel("$x$")
+        plt.ylabel("$y$")
+        plt.show()
+
+    def plot_img(x, y, z, title):
+        plt.contourf(x, y, z, cmap=cmap)
+        # plt.contourf(x, y, z)
+        plt.colorbar()
+        plt.title(title)
+        plt.xlabel("$x$")
+        plt.ylabel("$y$")
+        plt.show()
+
+    def plot_line(x, y, title):
+        plt.plot(x, y)
+        plt.xlabel("$x$")
+        plt.ylabel("$\psi$")
+        plt.title(title)
+        plt.show()
+
+    def plot_3D_scatter(x, y, z, vals, title):
+
+        fig = plt.figure()
+        ax = fig.gca(projection='3d')
+
+        p = ax.scatter3D(x, y, zs=z, c=vals, cmap=colour_map)
+        fig.colorbar(p, ax=ax)
+
+        plt.title(title)
+        plt.xlabel("$x$")
+        plt.ylabel("$y$")
+        ax.set_zlabel("$z$")
+        plt.show()
+
+    if num_axes == 1:
+
+        num_extra = len(all_psi) - 1
+
+        # legend = ["Ground State", "1st State", "2nd State", "3rd State", "4th State"]
+        legend = ["Ground State"]
+        for i in range(num_extra):
+            th = "th"
+            if i == 1:
+                th = "st"
+            elif i == 2:
+                th = "nd"
+            elif i == 3:
+                th = "rd"
+            legend += ["{}{} State".format(i, th)]
+
+        if include_V:
+            all_psi = np.vstack((V, all_psi))
+            legend = ["Potential"] + legend
+        for i in range(len(all_psi)):
+            title = "The {} for the {} along $x$:".format(legend[i], pot_sys_name)
+            plot_line(*r, all_psi[i], title)
+
+    elif num_axes == 2:
+
+        if include_V:
+            title = "The Potential function for the {} along $x$ & $y$".format(pot_sys_name)
+            plot_img(*r, V, title)
+            plot_wireframe(*r, V, title, "V")
+            plot_surface(*r, V, title, "V")
+
+        num_states = len(all_psi)
+        for n in range(num_states):
+            title = "$\psi_{}$ for the {} along $x$ & $y$".format(n, pot_sys_name)
+            plot_img(*r, all_psi[n], title)
+            plot_wireframe(*r, all_psi[n], title, "$\psi$")
+            plot_surface(*r, all_psi[n], title, "$\psi$")
+
+    elif num_axes == 3:
+
+        if include_V:
+            title = "The Potential function for the {} along $x$, $y$ & $z$".format(pot_sys_name)
+            plot_3D_scatter(*r, V, title)
+
+        num_states = len(all_psi)
+        for n in range(num_states):
+            title = "$\psi_{}$ for the {} along $x$, $y$ & $z$".format(n, pot_sys_name)
+            plot_3D_scatter(*r, all_psi[n], title)
+
     else:
-        plt.plot(x, psi)
-    plt.title("The {}th State for the {} along ${}$".format(n, pot_sys_name, "x"))
-    plt.xlabel("${}$".format("x"))
-    plt.ylabel("$\psi$")
-    plt.show()
+        return
 
-    return psi
-
-
-# def plotting(r, all_psi, num_axes, include_V=False, V=None):
-#     def plot_img(x, y, z, title):
-#         # cmap = plt.cm.get_cmap(colour_map)
-#
-#         # plt.contourf(x, y, z, cmap=cmap)
-#         plt.contourf(x, y, z)
-#         plt.title(title)
-#         plt.xlabel("$x$")
-#         plt.ylabel("$y$")
-#         plt.show()
-#
-#     if num_axes == 2:
-#         x = r[0]
-#         y = r[1]
-#
-#         XX, YY = np.meshgrid(x, y)
-#
-#         if include_V:
-#             V_x = V[0]
-#             V_y = V[1]
-#
-#             V_XX, V_YY = np.meshgrid(V_x, V_y)
-#             Z = V_XX + V_YY
-#
-#             title = "The Potential function for {} along $x$ & $y$".format(pot_sys_name)
-#             plot_img(XX, YY, Z, title)
-#
-#         num_states = (len(all_psi) // num_axes) - 1
-#         for n in range(num_states):
-#             psi_x = all_psi[2 * (n + 1)]
-#             psi_y = all_psi[2 * (n + 1) + 1]
-#
-#             psi_XX, psi_YY = np.meshgrid(psi_x, psi_y)
-#             Z = psi_XX + psi_YY
-#
-#             title = "$\psi_{}$ for the {} along $x$ & $y$".format(n, pot_sys_name)
-#             plot_img(XX, YY, Z, title)
-#
-#     else:
-#         return
+    # if num_axes == 2:
+    #
+    #     if include_V:
+    #         title = "The Potential function for {} along $x$ & $y$".format(pot_sys_name)
+    #         plot_img(*r, V, title)
+    #         plot_wireframe(*r, V, title, "V")
+    #         plot_surface(*r, V, title, "V")
+    #
+    #     num_states = len(all_psi)
+    #     for n in range(num_states):
+    #         title = "$\psi_{}$ for the {} along $x$ & $y$".format(n, pot_sys_name)
+    #         plot_img(*r, all_psi[n], title)
+    #         plot_wireframe(*r, all_psi[n], title, "$\psi$")
+    #         plot_surface(*r, all_psi[n], title, "$\psi$")
+    # elif num_axes == 1:
+    #
+    #     legend = ["Ground State", "1st State", "2nd State", "3rd State", "4th State"]
+    #     if include_V:
+    #         all_psi = [V] + all_psi
+    #         legend = ["Potential"] + legend
+    #     for i in range(len(all_psi)):
+    #         title = "The {} for the {} along $x$:".format(legend[i], pot_sys_name)
+    #         plot_line(*r, all_psi[i], title)
+    #
+    # else:
+    #     return
 
 
 def main():
@@ -255,10 +349,11 @@ def main():
 
     gen_DEV2(num_axes, N, dr)
     # all_psi stores each nth state of psi as a list of the psi states.
+    all_psi_linear = np.zeros([1] + [N ** num_axes])
     all_psi = np.zeros([1] + [N] * num_axes)
 
     for i in range(num_states):
-        psi = nth_state(a, b, N, num_iterations, all_psi, include_potential=include_potential,
+        psi = nth_state(r, dr, num_axes, N, num_iterations, all_psi_linear, include_potential=include_potential,
                         plot_scale=potential_scaling)
 
         all_psi = np.vstack((all_psi, psi))
