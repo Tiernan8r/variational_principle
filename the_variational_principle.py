@@ -123,9 +123,9 @@ def nth_state(r: np.ndarray, dr: float, D: int, N: int, num_iterations: int,
     #             for j in range(len(orthonormal_basis)):
     #                 orthonormal_basis[j, k] = 0
 
-    psi = normalise(psi, dr, D)
+    psi = normalise(psi, dr)
 
-    prev_E = energy(psi, V, dr, D)
+    prev_E = energy(psi, V, dr)
     print("Initial Energy:", prev_E)
 
     for i in range(num_iterations):
@@ -139,17 +139,17 @@ def nth_state(r: np.ndarray, dr: float, D: int, N: int, num_iterations: int,
         basis_vector = orthonormal_basis[rand_index]
 
         psi += basis_vector * rand_change
-        psi = normalise(psi, dr, D)
+        psi = normalise(psi, dr)
 
-        new_E = energy(psi, V, dr, D)
+        new_E = energy(psi, V, dr)
         if new_E < prev_E:
             prev_E = new_E
             A[rand_index] += rand_change
         else:
             psi -= basis_vector * rand_change
-            psi = normalise(psi, dr, D)
+            psi = normalise(psi, dr)
 
-    print("Final Energy:", energy(psi, V, dr, D))
+    print("Final Energy:", energy(psi, V, dr))
     t2 = time.time()
     print("The time for the " + str(n) + "th iteration is:", t2 - t1, "s.\n")
 
@@ -274,7 +274,7 @@ def plotting(r, all_psi, D, include_V=False, V=None):
 def main():
     # initially is symmetric grid.
     a, b, N = -10, 10, 100
-    num_states = 11
+    num_states = 4
     D = 1
     # Iteration recommendations:
     # 10**5 for 1D
