@@ -80,26 +80,6 @@ def potential(r: np.ndarray) -> np.ndarray:
     return np.sum(0.5 * r ** 2, axis=0)
 
 
-def gen_orthonormal_states(pre_existing_states: np.ndarray, axis_size, fix_artifacts=True) -> np.ndarray:
-    # TODO needs nD TLC.
-
-    # there are no known states already
-    if pre_existing_states.size == 0:
-        return spr.identity(axis_size)
-    else:
-
-        orthonormal_states = la.null_space(pre_existing_states)
-
-        # # artifacts fix
-        # n = len(pre_existing_states)
-        # if fix_artifacts:
-        #     for j in range(n):
-        #         for k in range(len(orthonormal_states[n])):
-        #             orthonormal_states[j, k] = 0
-
-        return orthonormal_states.T
-
-
 def nth_state(r: np.ndarray, dr: float, num_axes: int, axis_length: int, num_iterations: int,
               prev_psi_linear: np.ndarray,
               fix_infinities=True, fix_artifacts=True, include_potential=False, plot_scale=10) -> np.ndarray:
@@ -110,7 +90,6 @@ def nth_state(r: np.ndarray, dr: float, num_axes: int, axis_length: int, num_ite
     #  occurs because 1st state == 0th state => orthonormals goosed.
     #  therefore: make 1 good -> all good?
 
-    # orthonormal_states = gen_orthonormal_states(prev_psi_linear, axis_length ** num_axes)
     orthonormal_states = la.null_space(prev_psi_linear).T
 
     num_columns = len(orthonormal_states)
