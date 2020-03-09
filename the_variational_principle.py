@@ -19,9 +19,8 @@ pot_sys_name = "Linear Harmonic Oscillator"
 colour_map = "plasma"
 
 
-def normalise(psi: np.ndarray, dr: float, D: int) -> np.ndarray:
+def normalise(psi: np.ndarray, dr: float) -> np.ndarray:
     # integrate using the rectangular rule
-    # norm = np.sum(psi * psi) * (dr ** num_axes)
     norm = (psi * psi).sum() * dr
     norm_psi = psi / np.sqrt(norm)
     return norm_psi
@@ -54,7 +53,7 @@ def gen_DEV2(D: int, N: int, dr: float):
             DEV2 += D
 
 
-def energy(psi: np.ndarray, V: np.ndarray, dr: float, num_axes: int) -> float:
+def energy(psi: np.ndarray, V: np.ndarray, dr: float) -> float:
     # when V is inf, wil get an invalid value error at runtime, not an issue, is sorted in filtering below:
     Vp = V * psi
     # filter out nan values in Vp
@@ -62,8 +61,6 @@ def energy(psi: np.ndarray, V: np.ndarray, dr: float, num_axes: int) -> float:
     # A is the 2nd derivative matrix.
     Tp = factor * (DEV2 @ psi)
 
-    # TODO sum may need to change for n dimensions.
-    # return np.sum(psi * (Tp + Vp)) * (dr ** num_axes)
     return (psi * (Tp + Vp)).sum() * dr
 
 
