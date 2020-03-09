@@ -53,8 +53,6 @@ def gen_DEV2(num_axes: int, axis_length: int, dr: float):
         else:
             DEV2 += D
 
-    # DEV2 *= (dr ** -2)
-
 
 def energy(psi: np.ndarray, V: np.ndarray, dr: float, num_axes: int) -> float:
     # when V is inf, wil get an invalid value error at runtime, not an issue, is sorted in filtering below:
@@ -297,7 +295,6 @@ def plotting(r, all_psi, num_axes, include_V=False, V=None):
 
 
 def main():
-    # TODO overhaul
 
     # initially is symmetric grid.
     a, b, N = -10, 10, 100
@@ -330,7 +327,7 @@ def main():
         psi_linear = psi.reshape(N ** num_axes)
         all_psi_linear = np.vstack((all_psi_linear, [psi_linear]))
     all_psi = all_psi[1:]
-    all_psi_linear = all_psi_linear[1:]
+    # all_psi_linear = all_psi_linear[1:]
 
     plotting(r, all_psi, num_axes, include_potential, V)
 
