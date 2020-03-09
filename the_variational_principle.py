@@ -2,6 +2,7 @@ import random
 import time
 
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import axes3d
 import numpy as np
 import scipy.linalg as la
 import scipy.sparse as spr
@@ -15,19 +16,18 @@ factor = -(hbar ** 2) / (2 * m)
 global DEV2
 axes = ("x", "y", "z", "w", "q", "r", "s", "t", "u", "v")
 pot_sys_name = "Linear Harmonic Oscillator"
-colour_map = "hsv"
+colour_map = "plasma"
 
 
-def normalise(psi: np.ndarray, dr: float, num_axes: int):
+def normalise(psi: np.ndarray, dr: float, num_axes: int) -> np.ndarray:
     # integrate using the rectangular rule
-    norm = np.sum(psi * psi) * (dr ** num_axes)
+    # norm = np.sum(psi * psi) * (dr ** num_axes)
+    norm = np.sum(psi * psi) * dr
     norm_psi = psi / np.sqrt(norm)
     return norm_psi
 
 
-def dev_mat(num_axes: int, N: int, axis_number: int):
-    # missing the 1/dr^2 factor
-
+def dev_mat(num_axes: int, N: int, axis_number: int, dr: float) -> np.ndarray:
     # cap axis_number in range to prevent errors.
     axis_number %= num_axes
 
@@ -38,7 +38,7 @@ def dev_mat(num_axes: int, N: int, axis_number: int):
                  (([1] * N ** axis_number) * (N - 1) + [0] * N ** axis_number) * N ** num_repeats,
                  (([1] * N ** axis_number) * (N - 1) + [0] * N ** axis_number) * N ** num_repeats]
     D = spr.diags(diagonals, [0, -N ** axis_number, N ** axis_number], shape=(N ** num_axes, N ** num_axes))
-    return D
+    return D * (dr ** -2)
 
 
 def gen_DEV2(num_axes: int, axis_length: int, dr: float):
@@ -47,28 +47,29 @@ def gen_DEV2(num_axes: int, axis_length: int, dr: float):
     DEV2 = None
 
     for ax in range(num_axes):
-        D = dev_mat(num_axes, axis_length, ax)
+        D = dev_mat(num_axes, axis_length, ax, dr)
         if DEV2 is None:
             DEV2 = D
         else:
             DEV2 += D
 
-    DEV2 *= (dr ** -2)
+    # DEV2 *= (dr ** -2)
 
 
-def energy(psi: np.ndarray, V: np.ndarray, dx: float):
+def energy(psi: np.ndarray, V: np.ndarray, dr: float, num_axes: int) -> float:
     # when V is inf, wil get an invalid value error at runtime, not an issue, is sorted in filtering below:
     Vp = V * psi
     # filter out nan values in Vp
-    Vp = np.where(np.isfinite(Vp), Vp, 0)
+    # Vp = np.where(np.isfinite(Vp), Vp, 0)
     # A is the 2nd derivative matrix.
     Tp = factor * (DEV2 @ psi)
 
     # TODO sum may need to change for n dimensions.
-    return np.sum(psi * (Tp + Vp)) * (dr ** num_axes)
+    # return np.sum(psi * (Tp + Vp)) * (dr ** num_axes)
+    return np.sum(psi * (Tp + Vp)) * dr
 
 
-def potential(r: np.ndarray):
+def potential(r: np.ndarray) -> np.ndarray:
     # length = len(x)
     # third = length // 3
     # # mid, bef = numpy.zeros(third + 1), numpy.linspace(numpy.inf, numpy.inf, third)
