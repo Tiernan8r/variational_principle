@@ -80,7 +80,7 @@ def potential(r: np.ndarray) -> np.ndarray:
 
 def nth_state(r: np.ndarray, dr: float, D: int, N: int, num_iterations: int,
               prev_psi_linear: np.ndarray,
-              fix_infinities=True, fix_artifacts=True, include_potential=False, plot_scale=10) -> np.ndarray:
+              fix_infinities=True, fix_artifacts=True) -> np.ndarray:
     n = len(prev_psi_linear)
 
     t1 = time.time()
@@ -120,11 +120,11 @@ def nth_state(r: np.ndarray, dr: float, D: int, N: int, num_iterations: int,
     #         if not np.isfinite(V[j]):
     #             psi[j] = 0
     #
-    #     # infinite fix
+    #     # infinite fix of the orthonormal basis
     #     for k in range(len(psi)):
     #         if not np.isfinite(V[k]):
-    #             for j in range(len(orthonormal_states)):
-    #                 orthonormal_states[j, k] = 0
+    #             for j in range(len(orthonormal_basis)):
+    #                 orthonormal_basis[j, k] = 0
 
     psi = normalise(psi, dr, D)
 
@@ -165,6 +165,7 @@ def nth_state(r: np.ndarray, dr: float, D: int, N: int, num_iterations: int,
     psi = psi.reshape([N] * D)
 
     return psi
+
 
 def plotting(r, all_psi, D, include_V=False, V=None):
     cmap = plt.cm.get_cmap(colour_map)
@@ -302,8 +303,7 @@ def main():
     all_psi = np.zeros([1] + [N] * D)
 
     for i in range(num_states):
-        psi = nth_state(r, dr, D, N, num_iterations, all_psi_linear, include_potential=include_potential,
-                        plot_scale=potential_scaling)
+        psi = nth_state(r, dr, D, N, num_iterations, all_psi_linear)
 
         psi_linear = psi.reshape(N ** D)
         if initially_empty:
