@@ -79,10 +79,9 @@ def potential(r: np.ndarray) -> np.ndarray:
 
 
 def nth_state(r: np.ndarray, dr: float, D: int, N: int, num_iterations: int,
-              prev_A: np.ndarray,
-              fix_infinities=True, fix_artifacts=True, include_potential=False, plot_scale=10) -> (
-        np.ndarray, np.ndarray):
-    n = len(prev_A)
+              prev_psi_linear: np.ndarray,
+              fix_infinities=True, fix_artifacts=True, include_potential=False, plot_scale=10) -> np.ndarray:
+    n = len(prev_psi_linear)
 
     t1 = time.time()
     # TODO error in inf occurs because null_space returned is wrong?
@@ -90,7 +89,7 @@ def nth_state(r: np.ndarray, dr: float, D: int, N: int, num_iterations: int,
     #  therefore: make 1 good -> all good?
 
     # may need to fix artifacts...
-    orthonormal_basis = la.null_space(prev_A).T
+    orthonormal_basis = la.null_space(prev_psi_linear).T
 
     num_columns = len(orthonormal_basis)
 
@@ -165,12 +164,7 @@ def nth_state(r: np.ndarray, dr: float, D: int, N: int, num_iterations: int,
 
     psi = psi.reshape([N] * D)
 
-    A = A / A.sum()
-    # A *= orthonormal_basis.sum(0)
-
-    # return psi, A
-    return psi, psi
-
+    return psi
 
 def plotting(r, all_psi, D, include_V=False, V=None):
     cmap = plt.cm.get_cmap(colour_map)
@@ -280,7 +274,6 @@ def plotting(r, all_psi, D, include_V=False, V=None):
 
 
 def main():
-
     # initially is symmetric grid.
     a, b, N = -10, 10, 100
     num_states = 11
@@ -307,24 +300,19 @@ def main():
     initially_empty = True
     all_psi_linear = np.zeros([1] + [N ** D])
     all_psi = np.zeros([1] + [N] * D)
-    # all_A = np.zeros([1] + [N ** D])
 
     for i in range(num_states):
-        psi, A = nth_state(r, dr, D, N, num_iterations, all_psi_linear, include_potential=include_potential,
-                           plot_scale=potential_scaling)
+        psi = nth_state(r, dr, D, N, num_iterations, all_psi_linear, include_potential=include_potential,
+                        plot_scale=potential_scaling)
 
-        # psi, A = nth_state(r, dr, D, N, num_iterations, all_A, include_potential=include_potential,
-        #                    plot_scale=potential_scaling)
         psi_linear = psi.reshape(N ** D)
         if initially_empty:
             all_psi_linear = np.array([psi_linear])
             all_psi = np.array([psi])
-            # all_A = np.array([A])
             initially_empty = False
         else:
             all_psi_linear = np.vstack((all_psi_linear, [psi_linear]))
             all_psi = np.vstack((all_psi, psi))
-            # all_A = np.vstack((all_A, A))
 
     plotting(r, all_psi, D, include_potential, V)
 
