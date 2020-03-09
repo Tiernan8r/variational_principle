@@ -79,7 +79,7 @@ def potential(r: np.ndarray):
     return np.sum(0.5 * r ** 2, axis=0)
 
 
-def gen_orthonormal_states(pre_existing_states: np.ndarray, axis_size, fix_artifacts=True):
+def gen_orthonormal_states(pre_existing_states: np.ndarray, axis_size, fix_artifacts=True) -> np.ndarray:
     # TODO needs nD TLC.
 
     # there are no known states already
@@ -88,13 +88,13 @@ def gen_orthonormal_states(pre_existing_states: np.ndarray, axis_size, fix_artif
     else:
 
         orthonormal_states = la.null_space(pre_existing_states)
-        n = len(pre_existing_states)
 
-        # artifacts fix
-        if fix_artifacts:
-            for j in range(n):
-                for k in range(len(orthonormal_states[n])):
-                    orthonormal_states[j, k] = 0
+        # # artifacts fix
+        # n = len(pre_existing_states)
+        # if fix_artifacts:
+        #     for j in range(n):
+        #         for k in range(len(orthonormal_states[n])):
+        #             orthonormal_states[j, k] = 0
 
         return orthonormal_states.T
 
@@ -109,9 +109,10 @@ def nth_state(r: np.ndarray, dr: float, num_axes: int, axis_length: int, num_ite
     #  occurs because 1st state == 0th state => orthonormals goosed.
     #  therefore: make 1 good -> all good?
 
-    orthonormal_states = gen_orthonormal_states(prev_psi, axis_length)
+    # orthonormal_states = gen_orthonormal_states(prev_psi_linear, axis_length ** num_axes)
+    orthonormal_states = la.null_space(prev_psi_linear).T
 
-    num_columns = orthonormal_states.shape[0]
+    num_columns = len(orthonormal_states)
 
     random.seed("THE-VARIATIONAL-PRINCIPLE")
 
