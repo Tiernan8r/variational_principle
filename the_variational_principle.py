@@ -89,9 +89,9 @@ def nth_state(r: np.ndarray, dr: float, D: int, N: int, num_iterations: int,
     #  therefore: make 1 good -> all good?
 
     # may need to fix artifacts...
-    basis_vector = la.null_space(prev_psi_linear).T
+    orthonormal_basis = la.null_space(prev_psi_linear).T
 
-    num_columns = len(basis_vector)
+    num_columns = len(orthonormal_basis)
 
     random.seed("THE-VARIATIONAL-PRINCIPLE")
 
@@ -139,7 +139,7 @@ def nth_state(r: np.ndarray, dr: float, D: int, N: int, num_iterations: int,
         if random.random() > 0.5:
             rand_change *= -1
 
-        basis_vector = basis_vector[rand_index]
+        basis_vector = orthonormal_basis[rand_index]
 
         psi += basis_vector * rand_change
         psi = normalise(psi, dr, D)
