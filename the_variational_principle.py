@@ -203,7 +203,7 @@ def nth_state(r: np.ndarray, dr: float, D: int, N: int, num_iterations: int,
         # generate a random orthonormal basis to sample.
         rand_index = random.randrange(num_bases)
 
-        # generate a random value to change by that comnverges to 0 as we sample more.
+        # generate a random value to change by that converges to 0 as we sample more.
         rand_change = random.random() * 0.1 * (num_iterations - i) / num_iterations
 
         # 50% of the time, add, the other 50% take away
@@ -260,11 +260,14 @@ def plotting(r, all_psi, D, include_V=False, V=None):
     cmap = plt.cm.get_cmap(colour_map)
 
     # A method to plot the 1D system as a line.
-    def plot_line(x, y, title, ylabel="$\psi$", filename=None):
+    def plot_line(x, y, title, ylabel="$\psi$", legend=None, filename=None, include_V=False, V=None):
+        if include_V:
+            plt.plot(x, V)
         plt.plot(x, y)
         plt.xlabel("$x$")
         plt.ylabel(ylabel)
         plt.title(title)
+        plt.legend(legend)
         if filename is not None:
             plt.savefig(filename)
         plt.show()
@@ -323,24 +326,31 @@ def plotting(r, all_psi, D, include_V=False, V=None):
         num_states = len(all_psi)
 
         # Generate the legend for the system, naming the 0th state as the Ground State.
-        legend = ["Ground State"]
+        state_names = ["Ground State"]
         for i in range(1, num_states):
-            legend += ["{}{} State".format(i, th.get(i, "th"))]
+            state_names += ["{}{} State".format(i, th.get(i, "th"))]
 
         # If we want to plot the potential, plot it first.
         if include_V:
             all_psi = np.vstack((V, all_psi))
-            legend = ["Potential"] + legend
+            state_names = ["Potential"] + state_names
 
         # iterate over all the functions to plot, and plot them individually.
         for i in range(len(all_psi)):
-            title = "The {} for the {} along $x$:".format(legend[i], pot_sys_name)
-            fname = "state_{}".format(i - 1)
+            title = "The {} for the {} along $x$:".format(state_names[i], pot_sys_name)
+            file_name = "state_{}".format(i - 1)
             state = "$\psi$"
-            if legend[i] == "Potential":
-                fname = "potential"
+            plt_with_V = include_V
+            if state_names[i] == "Potential":
+                file_name = "potential"
                 state = "V"
-            plot_line(*r, all_psi[i], title, state, fname)
+                plt_with_V = False
+
+            legend = [state_names[i]]
+            if include_V:
+                legend = [state_names[0]] + legend
+            legend = tuple(legend)
+            plot_line(*r, all_psi[i], title, state, legend=legend, include_V=plt_with_V, V=V[0], filename=file_name)
 
     # If the system is 2D, plot the img, wireframe and surfaces.
     elif D == 2:
