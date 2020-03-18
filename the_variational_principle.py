@@ -19,12 +19,22 @@ pot_sys_name = "Linear Harmonic Oscillator"
 colour_map = "plasma"
 
 
-def normalise(psi: np.ndarray, dr: float, D: int) -> np.ndarray:
+def normalise(psi: np.ndarray, dr: float) -> np.ndarray:
     # integrate using the rectangular rule
-    # norm = np.sum(psi * psi) * (dr ** num_axes)
     norm = (psi * psi).sum() * dr
     norm_psi = psi / np.sqrt(norm)
     return norm_psi
+
+
+def boundary_conditions(f: np.ndarray, N: int, D: int) -> np.ndarray:
+    # The Boundary Conditions
+    f[0], f[-1] = 0, 0
+    if D > 1:
+        for ax in range(1, N - 1):
+            row = f[ax]
+            col = row.T
+            row[0], row[-1], col[0], col[-1] = 0, 0, 0, 0
+    return f
 
 
 def dev_mat(D: int, N: int, axis_number: int, dr: float) -> np.ndarray:
@@ -37,8 +47,15 @@ def dev_mat(D: int, N: int, axis_number: int, dr: float) -> np.ndarray:
     diagonals = [[-2] * N ** D,
                  (([1] * N ** axis_number) * (N - 1) + [0] * N ** axis_number) * N ** num_repeats,
                  (([1] * N ** axis_number) * (N - 1) + [0] * N ** axis_number) * N ** num_repeats]
-    D = spr.diags(diagonals, [0, -N ** axis_number, N ** axis_number], shape=(N ** D, N ** D))
-    return D * (dr ** -2)
+    D_n = spr.diags(diagonals, [0, -N ** axis_number, N ** axis_number], shape=(N ** D, N ** D))
+
+    # if D == 1:
+    #     A = D_n.tolil()
+    #     A[0, 0], A[0, 1], A[0, 2] = A[-1,-1], A[-1,-2], A[-1,-3] = 1,-2,1
+    #     # A[-1,-1], A[-1,-2], A[-1,-3] = 1,-2,1
+    #     D_n = A.tocsr()
+
+    return D_n * (dr ** -2)
 
 
 def gen_DEV2(D: int, N: int, dr: float):
@@ -47,14 +64,14 @@ def gen_DEV2(D: int, N: int, dr: float):
     DEV2 = None
 
     for ax in range(D):
-        D = dev_mat(D, N, ax, dr)
+        D_n = dev_mat(D, N, ax, dr)
         if DEV2 is None:
-            DEV2 = D
+            DEV2 = D_n
         else:
-            DEV2 += D
+            DEV2 += D_n
 
 
-def energy(psi: np.ndarray, V: np.ndarray, dr: float, num_axes: int) -> float:
+def energy(psi: np.ndarray, V: np.ndarray, dr: float) -> float:
     # when V is inf, wil get an invalid value error at runtime, not an issue, is sorted in filtering below:
     Vp = V * psi
     # filter out nan values in Vp
@@ -62,8 +79,6 @@ def energy(psi: np.ndarray, V: np.ndarray, dr: float, num_axes: int) -> float:
     # A is the 2nd derivative matrix.
     Tp = factor * (DEV2 @ psi)
 
-    # TODO sum may need to change for n dimensions.
-    # return np.sum(psi * (Tp + Vp)) * (dr ** num_axes)
     return (psi * (Tp + Vp)).sum() * dr
 
 
@@ -79,60 +94,57 @@ def potential(r: np.ndarray) -> np.ndarray:
 
 
 def nth_state(r: np.ndarray, dr: float, D: int, N: int, num_iterations: int,
-              prev_psi_linear: np.ndarray,
-              fix_infinities=True, fix_artifacts=True, include_potential=False, plot_scale=10) -> np.ndarray:
-    n = len(prev_psi_linear)
-
+              prev_psi_linear: np.ndarray, n: int,
+              fix_infinities=True) -> np.ndarray:
     t1 = time.time()
-    # TODO error in inf occurs because null_space returned is wrong?
-    #  occurs because 1st state == 0th state => orthonormals goosed.
-    #  therefore: make 1 good -> all good?
 
-    # may need to fix artifacts...
+    for i in range(len(prev_psi_linear)):
+        plt.plot(prev_psi_linear[i])
+    plt.title("STATES TO BE ORTHONORMAL TO:")
+    plt.show()
+
     orthonormal_basis = la.null_space(prev_psi_linear).T
-
-    num_columns = len(orthonormal_basis)
+    # for b in orthonormal_basis:
+    #     b = boundary_conditions(b, N, 1)
 
     random.seed("THE-VARIATIONAL-PRINCIPLE")
 
     V = potential(r)
     V = V.reshape(N ** D)
 
-    psi = np.ones([N] * D)
-    # The Boundary Conditions
-    psi[0], psi[-1] = 0, 0
-    if D > 1:
-        for ax in range(1, N - 1):
-            row = psi[ax]
-            col = row.T
-            row[0], row[-1], col[0], col[-1] = 0, 0, 0, 0
+    # psi = np.ones([N] * D)
+    # psi = np.zeros([N] * D)
+    psi = np.empty([N] * D)
+    psi = boundary_conditions(psi, N, D)
+
+    # psi = normalise(psi, dr)
 
     # linearise psi
     psi = psi.reshape(N ** D)
 
-    # psi is composed of an orthonormal basis, times the scaling factors a_i for each basis vector,
-    # the orthonormal basis is generated above, store the a_i in the vector A below:
-    A = np.zeros(N ** D)
+    if fix_infinities:
+        # handling for the inf values in the infinite square well, or similar:
+        for j in range(len(psi)):
+            if not np.isfinite(V[j]):
+                psi[j] = 0
 
-    # if fix_infinities:
-    #     # handling for the inf values in the infinite square well, or similar:
-    #     for j in range(len(psi)):
-    #         if not np.isfinite(V[j]):
-    #             psi[j] = 0
-    #
-    #     # infinite fix
-    #     for k in range(len(psi)):
-    #         if not np.isfinite(V[k]):
-    #             for j in range(len(orthonormal_states)):
-    #                 orthonormal_states[j, k] = 0
+        # infinite fix of the orthonormal basis
+        for k in range(len(psi)):
+            if not np.isfinite(V[k]):
+                for j in range(len(orthonormal_basis)):
+                    orthonormal_basis[j, k] = 0
 
-    psi = normalise(psi, dr, D)
-
-    prev_E = energy(psi, V, dr, D)
+    prev_E = energy(psi, V, dr)
     print("Initial Energy:", prev_E)
 
+    num_bases = len(orthonormal_basis)
     for i in range(num_iterations):
-        rand_index = random.randrange(1, num_columns - 1)
+
+        # rand_index = random.randrange(1, num_bases - 1)
+        # rand_index = random.randrange(num_bases - 1)
+        # rand_index = random.randrange(1, num_bases)
+        # rand_index = random.randrange(0, num_bases)
+        rand_index = random.randrange(num_bases)
 
         rand_change = random.random() * 0.1 * (num_iterations - i) / num_iterations
 
@@ -142,29 +154,33 @@ def nth_state(r: np.ndarray, dr: float, D: int, N: int, num_iterations: int,
         basis_vector = orthonormal_basis[rand_index]
 
         psi += basis_vector * rand_change
-        psi = normalise(psi, dr, D)
+        psi = normalise(psi, dr)
 
-        new_E = energy(psi, V, dr, D)
+        new_E = energy(psi, V, dr)
         if new_E < prev_E:
             prev_E = new_E
-            A[rand_index] += rand_change
         else:
             psi -= basis_vector * rand_change
-            psi = normalise(psi, dr, D)
+            psi = normalise(psi, dr)
 
-    print("Final Energy:", energy(psi, V, dr, D))
+    print("Final Energy:", energy(psi, V, dr))
     t2 = time.time()
     print("The time for the " + str(n) + "th iteration is:", t2 - t1, "s.\n")
 
-    # Correction of artifacts at edge:
-    if fix_artifacts:
-        for j in range(n + 1):
-            psi[j] = 0
-        psi = normalise(psi, dr, D)
-
     psi = psi.reshape([N] * D)
+    # psi = boundary_conditions(psi, N, D)
+    #
+    # # psi = psi.reshape(N ** D)
+    # psi = normalise(psi, dr)
+    # # psi = psi.reshape([N] * D)
+
+    I = np.sum(psi) * dr
+    # Correction of phase, to bring it to the positive for nicer plotting.
+    if I < 0:
+        psi *= -1
 
     return psi
+
 
 def plotting(r, all_psi, D, include_V=False, V=None):
     cmap = plt.cm.get_cmap(colour_map)
@@ -199,11 +215,13 @@ def plotting(r, all_psi, D, include_V=False, V=None):
         plt.ylabel("$y$")
         plt.show()
 
-    def plot_line(x, y, title):
+    def plot_line(x, y, title, filename=None):
         plt.plot(x, y)
         plt.xlabel("$x$")
         plt.ylabel("$\psi$")
         plt.title(title)
+        if filename is not None:
+            plt.savefig(filename)
         plt.show()
 
     def plot_3D_scatter(x, y, z, vals, title):
@@ -241,7 +259,10 @@ def plotting(r, all_psi, D, include_V=False, V=None):
             legend = ["Potential"] + legend
         for i in range(len(all_psi)):
             title = "The {} for the {} along $x$:".format(legend[i], pot_sys_name)
-            plot_line(*r, all_psi[i], title)
+            fname = "state_{}".format(i - 1)
+            if legend[i] == "Potential":
+                fname = "potential"
+            plot_line(*r, all_psi[i], title, fname)
 
     elif D == 2:
 
@@ -276,7 +297,10 @@ def plotting(r, all_psi, D, include_V=False, V=None):
 def main():
     # initially is symmetric grid.
     a, b, N = -10, 10, 100
-    num_states = 11
+    num_states = 3
+    if num_states >= N:
+        num_states = N - 2
+
     D = 1
     # Iteration recommendations:
     # 10**5 for 1D
@@ -302,8 +326,7 @@ def main():
     all_psi = np.zeros([1] + [N] * D)
 
     for i in range(num_states):
-        psi = nth_state(r, dr, D, N, num_iterations, all_psi_linear, include_potential=include_potential,
-                        plot_scale=potential_scaling)
+        psi = nth_state(r, dr, D, N, num_iterations, all_psi_linear, i + 1)
 
         psi_linear = psi.reshape(N ** D)
         if initially_empty:
@@ -312,7 +335,7 @@ def main():
             initially_empty = False
         else:
             all_psi_linear = np.vstack((all_psi_linear, [psi_linear]))
-            all_psi = np.vstack((all_psi, psi))
+            all_psi = np.vstack((all_psi, [psi]))
 
     plotting(r, all_psi, D, include_potential, V)
 
