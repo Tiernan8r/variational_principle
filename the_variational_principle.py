@@ -13,10 +13,11 @@ hbar = 6.582119569 * 10 ** -16  # 6.582119569x10^-16 (from wikipedia)
 m = 9.1093826 * 10 ** -31  # 9.1093837015(28)x10^-31
 factor = -(hbar ** 2) / (2 * m)
 
+th = {1: "st", 2: "nd", 3: "rd"}
 global DEV2
 axes = ("x", "y", "z", "w", "q", "r", "s", "t", "u", "v")
-pot_sys_name = "Linear Harmonic Oscillator"
-colour_map = "plasma"
+pot_sys_name = "Infinite Square Well"
+colour_map = "autumn"
 
 
 def normalise(psi: np.ndarray, dr: float) -> np.ndarray:
@@ -24,17 +25,6 @@ def normalise(psi: np.ndarray, dr: float) -> np.ndarray:
     norm = (psi * psi).sum() * dr
     norm_psi = psi / np.sqrt(norm)
     return norm_psi
-
-
-def boundary_conditions(f: np.ndarray, N: int, D: int) -> np.ndarray:
-    # The Boundary Conditions
-    f[0], f[-1] = 0, 0
-    if D > 1:
-        for ax in range(1, N - 1):
-            row = f[ax]
-            col = row.T
-            row[0], row[-1], col[0], col[-1] = 0, 0, 0, 0
-    return f
 
 
 def dev_mat(D: int, N: int, axis_number: int, dr: float) -> np.ndarray:
@@ -48,12 +38,6 @@ def dev_mat(D: int, N: int, axis_number: int, dr: float) -> np.ndarray:
                  (([1] * N ** axis_number) * (N - 1) + [0] * N ** axis_number) * N ** num_repeats,
                  (([1] * N ** axis_number) * (N - 1) + [0] * N ** axis_number) * N ** num_repeats]
     D_n = spr.diags(diagonals, [0, -N ** axis_number, N ** axis_number], shape=(N ** D, N ** D))
-
-    # if D == 1:
-    #     A = D_n.tolil()
-    #     A[0, 0], A[0, 1], A[0, 2] = A[-1,-1], A[-1,-2], A[-1,-3] = 1,-2,1
-    #     # A[-1,-1], A[-1,-2], A[-1,-3] = 1,-2,1
-    #     D_n = A.tocsr()
 
     return D_n * (dr ** -2)
 
@@ -75,7 +59,7 @@ def energy(psi: np.ndarray, V: np.ndarray, dr: float) -> float:
     # when V is inf, wil get an invalid value error at runtime, not an issue, is sorted in filtering below:
     Vp = V * psi
     # filter out nan values in Vp
-    # Vp = np.where(np.isfinite(Vp), Vp, 0)
+    Vp = np.where(np.isfinite(Vp), Vp, 0)
     # A is the 2nd derivative matrix.
     Tp = factor * (DEV2 @ psi)
 
@@ -83,56 +67,60 @@ def energy(psi: np.ndarray, V: np.ndarray, dr: float) -> float:
 
 
 def potential(r: np.ndarray) -> np.ndarray:
-    # length = len(x)
-    # third = length // 3
-    # # mid, bef = numpy.zeros(third + 1), numpy.linspace(numpy.inf, numpy.inf, third)
-    # mid, bef = numpy.zeros(third + 1), numpy.linspace(10, 10, third)
-    # aft = bef.copy()
-    # return numpy.concatenate((bef, mid, aft))
+    V = r.copy()
+    for i in range(len(r)):
+        length = len(r[i])
+        third = length // 3
 
-    return np.sum(0.5 * r ** 2, axis=0)
+        addition = int(abs((third - (length / 3))) * 3)
+
+        mid, bef = np.zeros(third + addition), np.linspace(np.inf, np.inf, third)
+        # mid, bef = np.zeros(third + addition), np.linspace(10, 10, third)
+        aft = bef.copy()
+        # return np.concatenate((bef, mid, aft))
+        V[i] = np.concatenate((bef, mid, aft))
+
+    # V = np.zeros(r.shape)
+    # V = np.sum(0.5 * r ** 2, axis=0)
+    return V
 
 
 def nth_state(r: np.ndarray, dr: float, D: int, N: int, num_iterations: int,
-              prev_psi_linear: np.ndarray, n: int,
-              fix_infinities=True) -> np.ndarray:
+              prev_psi_linear: np.ndarray, n: int) -> np.ndarray:
     t1 = time.time()
 
-    for i in range(len(prev_psi_linear)):
-        plt.plot(prev_psi_linear[i])
-    plt.title("STATES TO BE ORTHONORMAL TO:")
-    plt.show()
-
     orthonormal_basis = la.null_space(prev_psi_linear).T
-    # for b in orthonormal_basis:
-    #     b = boundary_conditions(b, N, 1)
 
     random.seed("THE-VARIATIONAL-PRINCIPLE")
 
     V = potential(r)
     V = V.reshape(N ** D)
 
-    # psi = np.ones([N] * D)
-    # psi = np.zeros([N] * D)
-    psi = np.empty([N] * D)
-    psi = boundary_conditions(psi, N, D)
-
-    # psi = normalise(psi, dr)
+    psi = 0.5 * r ** 2
 
     # linearise psi
     psi = psi.reshape(N ** D)
 
-    if fix_infinities:
-        # handling for the inf values in the infinite square well, or similar:
-        for j in range(len(psi)):
-            if not np.isfinite(V[j]):
-                psi[j] = 0
+    # Account for infinite values in the potential:
+    len_V = len(V)
+    nan_indices = [False] * len_V
+    for j in range(len_V):
+        if not np.isfinite(V[j]):
+            a, b = j - 1, j + 1
+            if a < 0:
+                a = 0
+            if b >= len_V:
+                b = len_V - 1
 
-        # infinite fix of the orthonormal basis
-        for k in range(len(psi)):
-            if not np.isfinite(V[k]):
-                for j in range(len(orthonormal_basis)):
-                    orthonormal_basis[j, k] = 0
+            nan_indices[a] = nan_indices[j] = nan_indices[b] = True
+
+    # filter the corresponding psi values to be = 0
+    psi = np.where(nan_indices, 0, psi)
+
+    # filter the values in the orthonormal basis to be 0
+    for j in range(n - 1):
+        nan_indices[j] = False
+    orthonormal_basis = np.where(nan_indices, 0, orthonormal_basis)
 
     prev_E = energy(psi, V, dr)
     print("Initial Energy:", prev_E)
@@ -140,10 +128,6 @@ def nth_state(r: np.ndarray, dr: float, D: int, N: int, num_iterations: int,
     num_bases = len(orthonormal_basis)
     for i in range(num_iterations):
 
-        # rand_index = random.randrange(1, num_bases - 1)
-        # rand_index = random.randrange(num_bases - 1)
-        # rand_index = random.randrange(1, num_bases)
-        # rand_index = random.randrange(0, num_bases)
         rand_index = random.randrange(num_bases)
 
         rand_change = random.random() * 0.1 * (num_iterations - i) / num_iterations
@@ -168,15 +152,10 @@ def nth_state(r: np.ndarray, dr: float, D: int, N: int, num_iterations: int,
     print("The time for the " + str(n) + "th iteration is:", t2 - t1, "s.\n")
 
     psi = psi.reshape([N] * D)
-    # psi = boundary_conditions(psi, N, D)
-    #
-    # # psi = psi.reshape(N ** D)
-    # psi = normalise(psi, dr)
-    # # psi = psi.reshape([N] * D)
 
-    I = np.sum(psi) * dr
     # Correction of phase, to bring it to the positive for nicer plotting.
-    if I < 0:
+    phase = np.sum(psi) * dr
+    if phase < 0:
         psi *= -1
 
     return psi
@@ -185,7 +164,7 @@ def nth_state(r: np.ndarray, dr: float, D: int, N: int, num_iterations: int,
 def plotting(r, all_psi, D, include_V=False, V=None):
     cmap = plt.cm.get_cmap(colour_map)
 
-    def plot_wireframe(x, y, z, title, zlabel):
+    def plot_wireframe(x, y, z, title, zlabel="$\psi$"):
         fig = plt.figure()
         ax = fig.gca(projection="3d")
         ax.plot_wireframe(x, y, z)
@@ -195,7 +174,7 @@ def plotting(r, all_psi, D, include_V=False, V=None):
         plt.ylabel("$y$")
         plt.show()
 
-    def plot_surface(x, y, z, title, zlabel):
+    def plot_surface(x, y, z, title, zlabel="$\psi$"):
         fig = plt.figure()
         ax = fig.gca(projection="3d")
         surf = ax.plot_surface(x, y, z, cmap=cmap)
@@ -215,10 +194,10 @@ def plotting(r, all_psi, D, include_V=False, V=None):
         plt.ylabel("$y$")
         plt.show()
 
-    def plot_line(x, y, title, filename=None):
+    def plot_line(x, y, title, ylabel="$\psi$", filename=None):
         plt.plot(x, y)
         plt.xlabel("$x$")
-        plt.ylabel("$\psi$")
+        plt.ylabel(ylabel)
         plt.title(title)
         if filename is not None:
             plt.savefig(filename)
@@ -242,17 +221,9 @@ def plotting(r, all_psi, D, include_V=False, V=None):
 
         num_extra = len(all_psi)
 
-        # legend = ["Ground State", "1st State", "2nd State", "3rd State", "4th State"]
         legend = ["Ground State"]
         for i in range(1, num_extra):
-            th = "th"
-            if i == 1:
-                th = "st"
-            elif i == 2:
-                th = "nd"
-            elif i == 3:
-                th = "rd"
-            legend += ["{}{} State".format(i, th)]
+            legend += ["{}{} State".format(i, th.get(i, "th"))]
 
         if include_V:
             all_psi = np.vstack((V, all_psi))
@@ -260,9 +231,11 @@ def plotting(r, all_psi, D, include_V=False, V=None):
         for i in range(len(all_psi)):
             title = "The {} for the {} along $x$:".format(legend[i], pot_sys_name)
             fname = "state_{}".format(i - 1)
+            state = "$\psi$"
             if legend[i] == "Potential":
                 fname = "potential"
-            plot_line(*r, all_psi[i], title, fname)
+                state = "V"
+            plot_line(*r, all_psi[i], title, state, fname)
 
     elif D == 2:
 
@@ -309,7 +282,6 @@ def main():
     num_iterations = 10 ** 5
 
     include_potential = True
-    potential_scaling = 100
 
     x = np.linspace(a, b, N)
     tmp_r = [x] * D
