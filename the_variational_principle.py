@@ -194,7 +194,6 @@ def nth_state(r: np.ndarray, dr: float, D: int, N: int, num_iterations: int,
 
     # get a default initial energy to compare against.
     prev_E = energy(psi, V, dr)
-    print("Initial Energy:", prev_E)
 
     # Keep track of the number of orthonormal bases that there are.
     num_bases = len(orthonormal_basis)
@@ -380,7 +379,7 @@ def main():
     # The size and range of the grid
     start, stop, N = -10, 10, 100
     # The number of orders of psi to calculate
-    num_states = 3
+    num_states = 1
     # Keep the number of states in bounds, so that the orthonormal basis generator doesn't return an error.
     if num_states >= N:
         num_states = N - 2
