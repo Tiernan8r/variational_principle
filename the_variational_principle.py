@@ -27,17 +27,6 @@ def normalise(psi: np.ndarray, dr: float) -> np.ndarray:
     return norm_psi
 
 
-def boundary_conditions(f: np.ndarray, N: int, D: int) -> np.ndarray:
-    # The Boundary Conditions
-    f[0], f[-1] = 0, 0
-    if D > 1:
-        for ax in range(1, N - 1):
-            row = f[ax]
-            col = row.T
-            row[0], row[-1], col[0], col[-1] = 0, 0, 0, 0
-    return f
-
-
 def dev_mat(D: int, N: int, axis_number: int, dr: float) -> np.ndarray:
     # cap axis_number in range to prevent errors.
     axis_number %= D
@@ -102,25 +91,17 @@ def nth_state(r: np.ndarray, dr: float, D: int, N: int, num_iterations: int,
 
     orthonormal_basis = la.null_space(prev_psi_linear).T
 
-    for j in range(len(orthonormal_basis.T)):
-        plt.plot(orthonormal_basis.T[j])
-    # plt.plot(orthonormal_basis)
-    plt.title("RETURNED ORTHONORMAL BASIS")
-    plt.show()
-
     random.seed("THE-VARIATIONAL-PRINCIPLE")
 
     V = potential(r)
     V = V.reshape(N ** D)
 
-    # psi = np.empty([N] * D)
     psi = 0.5 * r ** 2
-
-    # psi = boundary_conditions(psi, N, D)
 
     # linearise psi
     psi = psi.reshape(N ** D)
 
+    # Account for infinite values in the potential:
     len_V = len(V)
     nan_indices = [False] * len_V
     for j in range(len_V):
@@ -133,34 +114,13 @@ def nth_state(r: np.ndarray, dr: float, D: int, N: int, num_iterations: int,
 
             nan_indices[a] = nan_indices[j] = nan_indices[b] = True
 
+    # filter the corresponding psi values to be = 0
     psi = np.where(nan_indices, 0, psi)
 
+    # filter the values in the orthonormal basis to be 0
     for j in range(n - 1):
         nan_indices[j] = False
-
-    # for j in range(len(orthonormal_basis.T)):
-    #     plt.plot(orthonormal_basis.T[j])
-    #     plt.title("OB" + str(j))
-    #     plt.show()
     orthonormal_basis = np.where(nan_indices, 0, orthonormal_basis)
-
-    # # Handling of infinity values in psi and corresponding entries in orthonormal_basis
-    # for j in range(len(psi)):
-    #     if not np.isfinite(V[j]) or not np.isfinite(psi[j]):
-    #         psi[j] = 0
-    #
-    # print("SHAPE OF OB:", orthonormal_basis.shape)
-    # # infinite fix of the orthonormal basis
-    # for j in range(len(orthonormal_basis)):
-    #     for k in range(len(V)):
-    #         if not np.isfinite(V[k]):
-    #             orthonormal_basis[j, k] = 0
-    #
-    for j in range(len(orthonormal_basis.T)):
-        plt.plot(orthonormal_basis.T[j])
-    # plt.plot(orthonormal_basis)
-    plt.title("INFINITE FIXED OB")
-    plt.show()
 
     prev_E = energy(psi, V, dr)
     print("Initial Energy:", prev_E)
@@ -168,10 +128,6 @@ def nth_state(r: np.ndarray, dr: float, D: int, N: int, num_iterations: int,
     num_bases = len(orthonormal_basis)
     for i in range(num_iterations):
 
-        # keep_looping = True
-        # while keep_looping:
-        #     rand_index = random.randrange(num_bases)
-        #     keep_looping = not np.isfinite(V[rand_index])
         rand_index = random.randrange(num_bases)
 
         rand_change = random.random() * 0.1 * (num_iterations - i) / num_iterations
@@ -326,7 +282,6 @@ def main():
     num_iterations = 10 ** 5
 
     include_potential = True
-    potential_scaling = 100
 
     x = np.linspace(a, b, N)
     tmp_r = [x] * D
