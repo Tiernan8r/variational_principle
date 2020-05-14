@@ -532,7 +532,7 @@ def plotting(r, all_psi, D, include_V=False, V=None, V_scale=1):
         return
 
 
-def compute(start=-10, stop=10, N=100, D=1, num_states=1, num_iterations=10 ** 7):
+def compute(start=-10, stop=10, N=100, D=1, num_states=1, num_iterations=10 ** 5):
     """
     The method to set up the variables and system, and aggregate the computed wavefunctions.
     :param start: The lower bound of the grid.
