@@ -11,3 +11,7 @@ This implementation utilises NumPy and Matplotlib to numerically calculate the e
 The code is capable of calculating the bound energies and states of any number of energy eigenstates, with decreasing accuracy with each new state.
 
 The code can handle systems of any number of dimensions, but can only plot the energy eigenstates of a system up to and including 3D.
+
+---
+
+For full details read ![the report](report.pdf)
