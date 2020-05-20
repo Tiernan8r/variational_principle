@@ -4,6 +4,8 @@ from numpy import vstack
 
 # the colour map for the surface plots.
 colour_map = "autumn"
+# The colour map is set by the global string
+cmap = plt.cm.get_cmap(colour_map)
 
 # neatness nicety, for displaying indexing of the states.
 th = {1: "st", 2: "nd", 3: "rd"}
@@ -24,68 +26,6 @@ def plotting(r, all_psi, D, include_V=False, V=None, V_scale=1):
     :param include_V: Whether to plot the potential or not.
     :param V: The potential to plot if so.
     """
-    # The colour map is set by the global string
-    cmap = plt.cm.get_cmap(colour_map)
-
-    # A method to plot the 1D system as a line.
-    def plot_line(x, y, title, ylabel="$\psi$", legend=None, filename=None, include_V=False, V=None, V_scale=1):
-        if include_V:
-            plt.plot(x, V)
-        plt.plot(x, y * V_scale)
-        plt.xlabel("$x$")
-        plt.ylabel(ylabel)
-        plt.title(title)
-        plt.legend(legend)
-        if filename is not None:
-            plt.savefig("../data/plots/" + filename)
-        plt.show()
-
-    # A method to plot the 2D system as a flat image.
-    def plot_img(x, y, z, title):
-        plt.contourf(x, y, z, cmap=cmap)
-        plt.colorbar()
-        plt.title(title)
-        plt.xlabel("$x$")
-        plt.ylabel("$y$")
-        plt.show()
-
-    # A method to plot the 2D system as a wireframe.
-    def plot_wireframe(x, y, z, title, zlabel="$\psi$"):
-        fig = plt.figure()
-        ax = fig.gca(projection="3d")
-        ax.plot_wireframe(x, y, z)
-        ax.set_zlabel(zlabel)
-        plt.title(title)
-        plt.xlabel("$x$")
-        plt.ylabel("$y$")
-        plt.show()
-
-    # A method to plot the 2D system as a surface plot.
-    def plot_surface(x, y, z, title, zlabel="$\psi$"):
-        fig = plt.figure()
-        ax = fig.gca(projection="3d")
-        surf = ax.plot_surface(x, y, z, cmap=cmap)
-        fig.colorbar(surf, ax=ax)
-        ax.set_zlabel(zlabel)
-        plt.title(title)
-        plt.xlabel("$x$")
-        plt.ylabel("$y$")
-        plt.show()
-
-    # A method to plot the 3d system as a 3D scatter plot.
-    def plot_3D_scatter(x, y, z, vals, title):
-
-        fig = plt.figure()
-        ax = fig.gca(projection='3d')
-
-        p = ax.scatter3D(x, y, zs=z, c=vals, cmap=colour_map)
-        fig.colorbar(p, ax=ax)
-
-        plt.title(title)
-        plt.xlabel("$x$")
-        plt.ylabel("$y$")
-        ax.set_zlabel("$z$")
-        plt.show()
 
     # If the system is 1D, plot a line
     if D == 1:
@@ -164,3 +104,67 @@ def plotting(r, all_psi, D, include_V=False, V=None, V_scale=1):
     # All higher order systems can't be easily visualised.
     else:
         return
+
+
+# A method to plot the 1D system as a line.
+def plot_line(x, y, title, ylabel="$\psi$", legend=None, filename=None, include_V=False, V=None, V_scale=1):
+    if include_V:
+        plt.plot(x, V)
+    plt.plot(x, y * V_scale)
+    plt.xlabel("$x$")
+    plt.ylabel(ylabel)
+    plt.title(title)
+    plt.legend(legend)
+    if filename is not None:
+        plt.savefig("../data/plots/" + filename)
+    plt.show()
+
+
+# A method to plot the 2D system as a flat image.
+def plot_img(x, y, z, title):
+    plt.contourf(x, y, z, cmap=cmap)
+    plt.colorbar()
+    plt.title(title)
+    plt.xlabel("$x$")
+    plt.ylabel("$y$")
+    plt.show()
+
+
+# A method to plot the 2D system as a wireframe.
+def plot_wireframe(x, y, z, title, zlabel="$\psi$"):
+    fig = plt.figure()
+    ax = fig.gca(projection="3d")
+    ax.plot_wireframe(x, y, z)
+    ax.set_zlabel(zlabel)
+    plt.title(title)
+    plt.xlabel("$x$")
+    plt.ylabel("$y$")
+    plt.show()
+
+
+# A method to plot the 2D system as a surface plot.
+def plot_surface(x, y, z, title, zlabel="$\psi$"):
+    fig = plt.figure()
+    ax = fig.gca(projection="3d")
+    surf = ax.plot_surface(x, y, z, cmap=cmap)
+    fig.colorbar(surf, ax=ax)
+    ax.set_zlabel(zlabel)
+    plt.title(title)
+    plt.xlabel("$x$")
+    plt.ylabel("$y$")
+    plt.show()
+
+
+# A method to plot the 3d system as a 3D scatter plot.
+def plot_3D_scatter(x, y, z, vals, title):
+    fig = plt.figure()
+    ax = fig.gca(projection='3d')
+
+    p = ax.scatter3D(x, y, zs=z, c=vals, cmap=colour_map)
+    fig.colorbar(p, ax=ax)
+
+    plt.title(title)
+    plt.xlabel("$x$")
+    plt.ylabel("$y$")
+    ax.set_zlabel("$z$")
+    plt.show()
