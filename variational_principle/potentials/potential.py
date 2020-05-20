@@ -1,6 +1,7 @@
-import numpy as np
+from numpy import ndarray, sum
 
-def potential(r: np.ndarray) -> np.ndarray:
+
+def potential(r: ndarray) -> ndarray:
     """
     The potential energy function of the system
     :param r: The coordinate grid of the system for each axis.
@@ -66,7 +67,7 @@ def potential(r: np.ndarray) -> np.ndarray:
 
     # Harmonic Oscillator:
     V = 0.5 * r ** 2
-    V = np.sum(V, axis=0)
+    V = sum(V, axis=0)
 
     # # Anharmonic Oscillator:
     # V = r + 0.5 * r ** 2 + 0.25 * r **4
