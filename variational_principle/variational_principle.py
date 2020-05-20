@@ -2,9 +2,9 @@ import random
 import time
 
 import numpy as np
-import scipy.linalg as la
+from scipy.linalg import null_space
 
-from plot.plot import plotting
+from plotting.plot import plotting
 from diffrentiation.laplacian import generate_laplacian
 from integration.romberg import romberg
 from potentials.potential import potential
@@ -72,7 +72,7 @@ def nth_state(r: np.ndarray, dr: float, D: int, N: int, num_iterations: int,
     t1 = time.time()
 
     # Get the orthonormal basis for this state, by finding the null space if the previous lower order psi
-    orthonormal_basis = la.null_space(prev_psi_linear).T
+    orthonormal_basis = null_space(prev_psi_linear).T
 
     # Set a seed for repeatable results.
     random.seed("THE-VARIATIONAL-PRINCIPLE")
@@ -168,6 +168,7 @@ def nth_state(r: np.ndarray, dr: float, D: int, N: int, num_iterations: int,
 
     # return the generated psi as a grid.
     return psi
+
 
 def compute(start=-10, stop=10, N=100, D=1, num_states=1, num_iterations=10 ** 5):
     """
