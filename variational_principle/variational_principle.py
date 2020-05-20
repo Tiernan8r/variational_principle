@@ -4,7 +4,7 @@ import time
 import numpy as np
 from scipy.linalg import null_space
 
-from plotting.plot import plotting
+from plot.plot import plotting
 from diffrentiation.laplacian import generate_laplacian
 from integration.romberg import romberg
 from potentials.potential import potential
