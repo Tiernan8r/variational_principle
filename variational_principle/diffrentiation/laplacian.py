@@ -1,7 +1,7 @@
-import scipy.sparse as spr
-import numpy as np
+from scipy.sparse import diags
+from numpy import ndarray
 
-def partial_derivative_matrix(D: int, N: int, axis_number: int, dr: float) -> np.ndarray:
+def partial_derivative_matrix(D: int, N: int, axis_number: int, dr: float) -> ndarray:
     """
     Generates the sparse second derivative central difference derivative matrix along given axis, for a grid of dimensions N^D.
     :param D: The number of dimensions of the system, e.g.: 3D...
@@ -21,7 +21,7 @@ def partial_derivative_matrix(D: int, N: int, axis_number: int, dr: float) -> np
                  (([1] * N ** axis_number) * (N - 1) + [0] * N ** axis_number) * N ** num_cells,
                  (([1] * N ** axis_number) * (N - 1) + [0] * N ** axis_number) * N ** num_cells]
     # Create a sparse matrix for the given diagonals, of the desired size.
-    D_n = spr.diags(diagonals, [0, -N ** axis_number, N ** axis_number], shape=(N ** D, N ** D))
+    D_n = diags(diagonals, [0, -N ** axis_number, N ** axis_number], shape=(N ** D, N ** D))
 
     # return the matrix, factored by the grid spacing as required by the central difference formula
     return D_n * (dr ** -2)
