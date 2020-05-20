@@ -127,3 +127,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# ignore generated plot files
+data/plots
+
+#ignore project files
+.idea
