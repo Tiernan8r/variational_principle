@@ -4,11 +4,7 @@ import time
 import numpy as np
 from scipy.linalg import null_space
 
-# from differentiation.laplacian import generate_laplacian
-# from ..differentiation.laplacian import generate_laplacian
 from variational_principle.differentiation.laplacian import generate_laplacian
-# import potentials.potential as pot
-# from ..potentials import potential as pot
 import variational_principle.potentials.potential as pot
 
 # global constants:
