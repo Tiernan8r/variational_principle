@@ -4,10 +4,12 @@ import time
 import numpy as np
 from scipy.linalg import null_space
 
-from plot.plot import plotting
-from diffrentiation.laplacian import generate_laplacian
-from integration.romberg import romberg
-from potentials.potential import potential
+# from differentiation.laplacian import generate_laplacian
+# from ..differentiation.laplacian import generate_laplacian
+from variational_principle.differentiation.laplacian import generate_laplacian
+# import potentials.potential as pot
+# from ..potentials import potential as pot
+import variational_principle.potentials.potential as pot
 
 # global constants:
 hbar = 6.5821189 * 10 ** -16  # 6.582119569x10^-16 eV (from wikipedia)
@@ -78,7 +80,7 @@ def nth_state(r: np.ndarray, dr: float, D: int, N: int, num_iterations: int,
     random.seed("THE-VARIATIONAL-PRINCIPLE")
 
     # Calculate the potential of the system.
-    V = potential(r)
+    V = pot.potential(r)
     # turn the potential grid into a linear column vector for linear algebra purposes.
     V = V.reshape(N ** D)
 
@@ -193,7 +195,7 @@ def compute(start=-10, stop=10, N=100, D=1, num_states=1, num_iterations=10 ** 5
     r = np.array(np.meshgrid(*axes, indexing="ij"))
 
     # generate the potential for the system
-    V = potential(r)
+    V = pot.potential(r)
 
     # Calculate the grid spacing for the symmetric grid.
     dr = (stop - start) / N
@@ -226,27 +228,3 @@ def compute(start=-10, stop=10, N=100, D=1, num_states=1, num_iterations=10 ** 5
             all_psi = np.vstack((all_psi, [psi]))
 
     return r, V, all_psi
-
-
-def main():
-    # Whether to plot the potential function or not.
-    include_potential = True
-
-    # The size and range of the grid
-    start, stop, N = -10, 10, 100
-    # The number of orders of psi to calculate
-    num_states = 1
-    # The number of axes of the system
-    D = 1
-    # Number of times to generate samples in the wavefunction
-    num_iterations = 10 ** 5
-
-    # a factor to scale the psi by when plotting it together with the potential function in the 1D case.
-    v_scale = 10
-
-    r, V, all_psi = compute(start, stop, N, D, num_states, num_iterations)
-    # plot the generated psis.
-    plotting(r, all_psi, D, include_potential, V, v_scale)
-
-
-main()
