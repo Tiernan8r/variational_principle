@@ -133,3 +133,4 @@ data/plots
 
 #ignore project files
 .idea
+.vscode
