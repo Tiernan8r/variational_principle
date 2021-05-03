@@ -25,6 +25,7 @@ def plotting(r, all_psi, D, include_V=False, V=None, V_scale=1):
     :param D: The number of axes in the system.
     :param include_V: Whether to plot the potential or not.
     :param V: The potential to plot if so.
+    :param V_scale: The amount to scale the wavefunction by when plotting it with the potential
     """
 
     # If the system is 1D, plot a line
@@ -116,7 +117,19 @@ def plot_line(x, y, title, ylabel="$\psi$", legend=None, filename=None, include_
     plt.title(title)
     plt.legend(legend)
     if filename is not None:
-        plt.savefig("../data/plots/" + filename)
+        try:
+            plt.savefig("../data/plots/" + filename)
+        except Exception as e:
+            success = False
+            try:
+                plt.savefig("./data/plots/" + filename)
+                success = True
+            except Exception as e2:
+                raise e2
+            
+            if not success:
+                raise e
+
     plt.show()
 
 
