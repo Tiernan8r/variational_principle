@@ -2,6 +2,7 @@
 
 import sys
 import re
+from typing import Tuple
 
 import variational_principle.compute as comp
 import variational_principle.plot as plt
@@ -26,7 +27,7 @@ def usage():
 
 # Parses the cli input and returns the following values:
 # start, stop, N, num_dimensions, num_states, num_iterations, include_potential, v_scale.
-def parse_input() -> (int, int, int, int, int, int, bool, int):
+def parse_input() -> Tuple[int, int, int, int, int, int, bool, int]:
     if len(sys.argv) < 4:
         usage()
 
