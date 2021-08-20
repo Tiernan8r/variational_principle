@@ -6,13 +6,7 @@ from scipy.linalg import null_space
 
 from variational_principle.differentiation.laplacian import generate_laplacian
 import variational_principle.potentials.potential as pot
-
-# global constants:
-hbar = 6.5821189 * 10 ** -16  # 6.582119569x10^-16 eV (from wikipedia)
-# electron
-m = 9.1093819 * 10 ** -31  # 9.1093837015(28)x10^-31
-# factor used in calculation of energy
-factor = -(hbar ** 2) / (2 * m)
+from variational_principle import ENERGY_FACTOR
 
 # The Lagrangian Derivative matrix
 global DEV2
@@ -47,7 +41,7 @@ def energy(psi: np.ndarray, V: np.ndarray, dr: float) -> float:
 
     # Calculate the kinetic energy of the system
     # DEV2 is the lagrangian 2nd derivative matrix.
-    Tp = factor * (DEV2 @ psi)
+    Tp = ENERGY_FACTOR * (DEV2 @ psi)
 
     # Return the integral of the KE and PE applied to psi, which is the energy.
     return (psi * (Tp + Vp)).sum() * dr
