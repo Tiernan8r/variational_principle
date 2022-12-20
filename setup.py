@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 with open("requirements.txt", "r") as req:
     required=req.read().splitlines()
@@ -6,6 +6,8 @@ with open("requirements.txt", "r") as req:
 setup(
     name='variational_principle',
     version='2.0',
-    packages=['variational_principle'],
+    packages=find_packages(
+        where="variational_principle/"
+    ),
     install_requires=required,
 )
