@@ -1,5 +1,7 @@
-# The Variational Principle in Quantum Mechanics:
----
+The Variational Principle in Quantum Mechanics:
+===
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=Tiernan8r_variational_principle&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=Tiernan8r_variational_principle)
+
 The Variational Principle in Quantum Mechanics states that:
 
 ![equation](https://latex.codecogs.com/svg.latex?<\psi&space;|&space;\hat{H}&space;|&space;\psi>&space;=&space;E&space;=&space;\frac{\int_{-\infty}^{\infty}\psi^*&space;\hat{H}&space;\psi&space;d\bar{r}}{\int_{-\infty}^{\infty}\psi^*&space;\psi&space;d\bar{r}}&space;\ge&space;E_0)
