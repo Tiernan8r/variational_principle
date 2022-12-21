@@ -1,1 +1,0 @@
-from src.variational_principle.differentiation import laplacian
