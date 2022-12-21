@@ -37,7 +37,7 @@ Ensure the setup steps above are run.
 
 From the top level directory:
 ```console
-$ python -m src.main
+$ python -m variational_principle.main
 ```
 
 Should result in a help message like the following:
