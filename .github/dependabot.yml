@@ -1,0 +1,16 @@
+version: 2
+updates:
+    # Maintain changes for python packages:
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    assignees:
+      - Tiernan8r
+    # Maintain updates on the github actions:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    assignees:
+      - Tiernan8r
