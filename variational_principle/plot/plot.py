@@ -1,5 +1,3 @@
-import os
-
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import axes3d
 from numpy import vstack
@@ -119,15 +117,18 @@ def plot_line(x, y, title, ylabel="$\psi$", legend=None, filename=None, include_
     plt.title(title)
     plt.legend(legend)
     if filename is not None:
-        # Make the plots dir if it doesn't exist
         try:
-            os.makedirs("./data/plots/")
-        except FileExistsError as e:
-            pass
-        try:
-            plt.savefig("./data/plots/" + filename)
+            plt.savefig("../data/plots/" + filename)
         except Exception as e:
-            raise e
+            success = False
+            try:
+                plt.savefig("./data/plots/" + filename)
+                success = True
+            except Exception as e2:
+                raise e2
+            
+            if not success:
+                raise e
 
     plt.show()
 
