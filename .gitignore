@@ -156,3 +156,6 @@ cython_debug/
 
 # test coverage reports:
 test-reports
+
+# Generated plots:
+data/
