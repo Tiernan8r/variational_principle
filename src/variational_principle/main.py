@@ -11,8 +11,8 @@ if os.getcwd() not in sys.path:
 import re
 from typing import Tuple
 
-import variational_principle.compute as comp
-import variational_principle.plot as plt
+import src.compute as comp
+import src.plot as plt
 
 
 def usage():

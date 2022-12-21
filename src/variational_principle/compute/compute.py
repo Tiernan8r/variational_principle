@@ -4,9 +4,9 @@ import time
 import numpy as np
 from scipy.linalg import null_space
 
-from variational_principle.differentiation.laplacian import generate_laplacian
-import variational_principle.potentials.potential as pot
-from variational_principle import ENERGY_FACTOR
+from src.differentiation.laplacian import generate_laplacian
+import src.potentials.potential as pot
+from src import ENERGY_FACTOR
 
 # The Lagrangian Derivative matrix
 global DEV2
