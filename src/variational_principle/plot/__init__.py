@@ -1,1 +1,1 @@
-from .plot import plotting
+from src.variational_principle.plot import plot

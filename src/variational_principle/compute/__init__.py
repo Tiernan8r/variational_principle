@@ -1,1 +1,1 @@
-from .compute import compute
+from src.variational_principle.compute import compute

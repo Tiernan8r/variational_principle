@@ -4,9 +4,9 @@ import time
 import numpy as np
 from scipy.linalg import null_space
 
-from src.differentiation.laplacian import generate_laplacian
-import src.potentials.potential as pot
-from src import ENERGY_FACTOR
+from src.variational_principle.differentiation import laplacian
+import src.variational_principle.potentials.potential as pot
+from src.variational_principle import ENERGY_FACTOR
 
 # The Lagrangian Derivative matrix
 global DEV2
@@ -192,7 +192,7 @@ def compute(start=-10, stop=10, N=100, D=1, num_states=1, num_iterations=10 ** 5
 
     # Generate the 2nd order finite difference derivative matrix.
     global DEV2
-    DEV2 = generate_laplacian(D, N, dr)
+    DEV2 = laplacian.generate_laplacian(D, N, dr)
 
     # Keep track whether we are on the first iteration or not.
     first_iteration = True

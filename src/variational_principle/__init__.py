@@ -1,1 +1,1 @@
-from src.constants import ENERGY_FACTOR, HBAR, MASS
+from src.variational_principle.constants import ENERGY_FACTOR, HBAR, MASS
