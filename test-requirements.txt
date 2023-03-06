@@ -20,8 +20,6 @@ coverage[toml]==7.0.0
     # via pytest-cov
 distlib==0.3.6
     # via virtualenv
-exceptiongroup==1.0.4
-    # via pytest
 filelock==3.8.2
     # via
     #   tox
@@ -61,7 +59,7 @@ pyflakes==3.0.1
     # via flake8
 pyproject-api==1.2.1
     # via tox
-pytest==7.2.0
+pytest==7.2.2
     # via
     #   -r test-requirements.in
     #   pytest-cov
@@ -70,14 +68,6 @@ pytest-cov==4.0.0
     # via -r test-requirements.in
 pytest-flake8==1.1.1
     # via -r test-requirements.in
-tomli==2.0.1
-    # via
-    #   build
-    #   coverage
-    #   mypy
-    #   pyproject-api
-    #   pytest
-    #   tox
 tox==4.0.16
     # via -r test-requirements.in
 typing-extensions==4.4.0
