@@ -26,7 +26,7 @@ packaging==22.0
     # via matplotlib
 pillow==9.3.0
     # via matplotlib
-pyinstaller==5.7.0
+pyinstaller==5.13.1
     # via -r requirements.in
 pyinstaller-hooks-contrib==2022.14
     # via pyinstaller
