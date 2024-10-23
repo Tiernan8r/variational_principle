@@ -24,7 +24,7 @@ numpy==1.24.0
     #   scipy
 packaging==22.0
     # via matplotlib
-pillow==9.3.0
+pillow==10.3.0
     # via matplotlib
 pyinstaller==5.7.0
     # via -r requirements.in
